@@ -1,6 +1,6 @@
 # ER taslağı — Akıllı Servis Masası ve Sistem Uzmanı Chatbot
 
-Proje: PRJIC20260201 · Tarih: 2 Ekim 2026 · Sürüm: 0.4
+Proje: PRJIC20260201 · Tarih: 2 Ekim 2026 · Sürüm: 0.5
 
 Bu dosya başlangıç tasarımıdır. Tablolar henüz veritabanlarında oluşturulmadı. Temel, verilen proje belgesi ve Mendeley verisinden hazırlanmış 10 pilot kayıttır.
 
@@ -63,7 +63,7 @@ erDiagram
         uuid record_id FK
         int chunk_index
         text chunk_text
-        vector embedding
+        vector_1024 embedding
         text embedding_model
         text record_content_hash
         timestamp created_at
@@ -104,7 +104,7 @@ Ticket ve soru-cevap kayıtları için sorun/çözüm alanları kullanılır. Re
 
 - Her kayıt tek bir kaynağa; her chunk tek bir kayda bağlanır.
 - `(record_id, chunk_index)` benzersizdir.
-- İlk prototip için yerel CPU üzerinde `intfloat/multilingual-e5-small` ve 384 boyut seçildi; fiziksel alan `vector(384)` olacak. Kurulum ve performans pilotta doğrulanacak. Aynı aramada tek model/boyut kullanılacak; model revizyonu da kaydedilecek. Embedding gerekçesi ve henüz kesinleşmemiş LLM erişim seçenekleri `03_Model_Secimi.md` dosyasındadır. Plus planıyla resmî Responses API erişimi öncelikle değerlendirilecek; hesap ve uygulama uygunluğu henüz doğrulanmadı.
+- Çalışan pilotta Cloudflare Workers AI üzerindeki `@cf/baai/bge-m3` modeli 1024 boyutlu vektör üretmiştir; fiziksel pgvector alanı `vector(1024)` olacaktır. Aynı aramada tek model ve boyut kullanılacak, model kimliği de kayıtla birlikte saklanacaktır. Model gerekçesi [Model_Secimi.md](Model_Secimi.md) dosyasındadır. RAG yanıtı için `gpt-5.6-terra` erişimi yerel/açık kaynak pilotta doğrulanmıştır.
 - Metin ve embedding aynı chunk satırında tutulur. Sadece `review_status=approved` ve `index_status=ready` olan kayıtlar aramaya alınır.
 - İçerik değiştiğinde yeniden indeksleme pending'e alınır. Yeni embedding'ler hazırlandıktan sonra chunk değişimi ve ready durumu PostgreSQL işlemi içinde birlikte kaydedilir. Başarısız işlemde eksik bir chunk grubu aramaya açılmaz.
 - Model değiştiğinde aynı boyutta olsa bile eski ve yeni modellerin vektörleri aynı aramada karıştırılmaz; ilgili indeks yeniden üretilir.
@@ -203,6 +203,6 @@ Admin panelinde puanların özeti kullanıcı geri bildirimi olarak gösterilir.
 
 ## 6. Şu anki örneğin yerleşimi
 
-Mendeley için bir `knowledge_sources` satırı açılır. `1005127.0` için bir `knowledge_records` satırı oluşturulur. Sorun, kategori, çözüm, sonuç ve kaynak yorumları mevcut pilot kayıttan alınır. Kontrol edilen kısa kayıt bir chunk olarak hazırlanabilir; uzunluk ve içerik gerektirirse birden fazla chunk oluşturulur. Embedding henüz üretilmediği için kayıt şu anda ready sayılmaz.
+Mendeley için bir `knowledge_sources` satırı açılır. `1005127.0` için bir `knowledge_records` satırı oluşturulur. Sorun, kategori, çözüm, sonuç ve kaynak yorumları mevcut pilot kayıttan alınır. Kontrol edilen kısa kayıt bir chunk olarak hazırlanabilir; uzunluk ve içerik gerektirirse birden fazla chunk oluşturulur. 10 pilot kaydın embedding'leri BGE-M3 ile üretilmiş ve bellekte arama doğrulanmıştır. PostgreSQL bağlantısı henüz kurulmadığından bu başarı veritabanındaki `index_status=ready` durumunu temsil etmez.
 
-Sonraki tasarım: [02_RAG_Akisi.md](02_RAG_Akisi.md).
+Sonraki tasarım: [RAG_Akisi.md](RAG_Akisi.md).
