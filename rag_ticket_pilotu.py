@@ -2,10 +2,10 @@ r"""Cloudflare BGE-M3 + ChatGPT plan erisimiyle tek soruluk RAG pilotu.
 
 Calistirma: .\.venv\Scripts\python.exe rag_ticket_pilotu.py
 Ayni klasorde plus_erisim_testi.py, ticket_vektor_arama.py ve
-tickets_pilot_10.csv bulunmali. Mevcut PyJWT[crypto] kurulumu kullanilir.
-Kayitli ticket vektorleri yeniden kullanilir. Her calistirmada bir soru,
-bir soru embedding istegi ve bir Terra yaniti uretilir. CSV degismisse
-ticket vektorleri de yenilenir. Windows'ta ChatGPT oturumu, kullaniciya
+tickets_pilot_10.csv bulunmali. PostgreSQL + pgvector varsayilan arama
+kaynagidir; veritabani kayitlarini once database/ dizinindeki yardimci
+komutlarla olustur. Her calistirmada bir soru, bir soru embedding istegi
+ve bir Terra yaniti uretilir. Windows'ta ChatGPT oturumu, kullaniciya
 bagli DPAPI korumasiyla proje disinda saklanir ve gerektiginde yenilenir.
 Cloudflare Account ID ve API token'i de ayri bir DPAPI dosyasinda tutulur;
 ilk giristen sonra kaydedilir. Cloudflare token'i 401 ile reddederse kayit
@@ -42,6 +42,8 @@ from urllib.request import Request
 try:
     import plus_erisim_testi as chat
     import ticket_vektor_arama as search
+    from database import search as database_search
+    from database.connection import DatabaseError
 except ModuleNotFoundError as exc:
     if exc.name == "jwt":
         print('Eksik paket. Calistir: .\\.venv\\Scripts\\python.exe -m pip install "PyJWT[crypto]"')
@@ -652,18 +654,35 @@ def show_answer(result, matches):
             print("Kaynak yorum siralari:", record["source_comment_seq"])
 
 
+def database_matches(query_vector):
+    matches = database_search.search_chunks(
+        query_vector,
+        embedding_model=search.MODEL,
+        limit=3,
+    )
+    if not matches:
+        raise RagError(
+            "PostgreSQL'de aranabilir kayıt bulunamadı. "
+            "Önce database.init_schema ve database.import_pilot komutlarını çalıştır."
+        )
+    return matches
+
+
 def main():
-    if sys.argv[1:] == ["--oturumu-kapat"]:
+    args = sys.argv[1:]
+    if args == ["--oturumu-kapat"]:
         sign_out()
         return
-    if sys.argv[1:] == ["--cloudflare-unut"]:
+    if args == ["--cloudflare-unut"]:
         forget_cloudflare_credentials()
         return
-    if sys.argv[1:]:
-        raise RagError("Bilinmeyen secenek. Normal calistir, --oturumu-kapat veya --cloudflare-unut kullan.")
+    if args not in ([], ["--memory"]):
+        raise RagError(
+            "Bilinmeyen secenek. Normal calistir, --memory, "
+            "--oturumu-kapat veya --cloudflare-unut kullan."
+        )
+    use_memory = args == ["--memory"]
     print("Ticket RAG pilotu | BGE-M3 + GPT-5.6-Terra")
-    records, csv_hash = search.read_tickets(search.CSV_PATH)
-    vectors = search.load_cache(search.CACHE_PATH, records, csv_hash)
     if not sys.stdin.isatty():
         raise RagError("Dosyayi PowerShell terminalinden calistir.")
     query = input("\nSorun (bos Enter = cikis): ").strip()
@@ -673,21 +692,27 @@ def main():
     if new_cf_credentials:
         save_cloudflare_credentials(account_id, cf_token)
     try:
-        if vectors is None:
-            print("Ticket vektorleri buluttan aliniyor...")
-            vectors = search.cloud_embeddings(account_id, cf_token, [search.embedding_text(r) for r in records])
-            search.save_cache(search.CACHE_PATH, records, csv_hash, vectors)
-        else:
-            print("Kayitli ticket vektorleri yuklendi.")
+        print("Soru embedding'i buluttan aliniyor...")
         query_vector = search.cloud_embeddings(account_id, cf_token, [query])[0]
+        if use_memory:
+            records, csv_hash = search.read_tickets(search.CSV_PATH)
+            vectors = search.load_cache(search.CACHE_PATH, records, csv_hash)
+            if vectors is None:
+                raise RagError(
+                    "Bellek karşılaştırması için embedding cache bulunamadı. "
+                    "Önce ticket_vektor_arama.py ile cache oluştur."
+                )
+            matches = search.top_matches(records, vectors, query_vector)
+        else:
+            matches = database_matches(query_vector)
     except search.PilotError as exc:
         if str(exc).startswith("HTTP 401:"):
             forget_cloudflare_credentials()
             raise RagError("Cloudflare token'i kabul edilmedi; korumali kayit silindi. Yeniden calistirip gecerli token'i gir.") from None
         raise
     del cf_token
-    matches = search.top_matches(records, vectors, query_vector)
-    print("\nAdaylar (benzerlik, dogruluk yuzdesi degil):")
+    source_label = "bellek" if use_memory else "PostgreSQL + pgvector"
+    print(f"\nAdaylar ({source_label}; benzerlik, dogruluk yuzdesi degil):")
     for score, record in matches:
         print(f"  ticket={record['issueid']} | benzerlik={score:.4f}")
     print("\nChatGPT oturumu kontrol ediliyor. Yanit modeli: " + LLM_MODEL)
@@ -702,7 +727,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (RagError, chat.TestError, search.PilotError) as exc:
+    except (RagError, DatabaseError, chat.TestError, search.PilotError) as exc:
         print(f"\nISLEM TAMAMLANMADI: {exc}", file=sys.stderr)
         if "subscription_sharing_usage_limit_exceeded" in str(exc):
             print("ChatGPT plan kullanimi sinirina ulasildi; bu istek tekrar gonderilmedi.", file=sys.stderr)
