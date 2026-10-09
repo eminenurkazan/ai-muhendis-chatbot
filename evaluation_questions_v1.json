@@ -1,0 +1,62 @@
+[
+  {
+    "question_id": "Q01",
+    "question": "Bir URL Chrome'un normal penceresinde açılmıyor ama gizli pencerede açılıyor. Kaynak ticketta ne denenmiş ve sonuç ne olmuş?",
+    "expected_ticket_ids": ["1005127.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q02",
+    "question": "Uygulamaya yük dengeleyici üzerinden girince erişim reddediliyor ve HTTP ile HTTPS istekleri karışıyor. Kaynakta nasıl bir teşhis yapılmış?",
+    "expected_ticket_ids": ["1007295.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q03",
+    "question": "Oracle sequence değerleri yavaş döndüğü için büyük işlem grupları gecikiyor. Kaynak kayıtta nasıl bir yaklaşım anlatılıyor ve hangi ayrıntılar eksik?",
+    "expected_ticket_ids": ["1010047.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q04",
+    "question": "Süresi dolmuş bir cüzdandaki işlemler otomatik geri alınmıyor ve nakit çıkışı yapılamıyor. Benzer ticketta ne yapılmış?",
+    "expected_ticket_ids": ["1005816.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q05",
+    "question": "Android uygulaması QR kod tararken kamera iznini sürekli yeniden istiyor ve taramayı engelliyor. Benzer olayın sonucu neydi?",
+    "expected_ticket_ids": ["1010541.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q06",
+    "question": "Tarama ekranı bir seferde yalnızca beş öğe kabul ediyor; daha fazlası için uyarı çıkıyor. Kaynakta sorun nasıl ele alınmış?",
+    "expected_ticket_ids": ["1005097.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q07",
+    "question": "Reddedilen cep telefonu numarasına geçiş iptal edilince active ve registered bayrakları no oluyor. Benzer kayıtta hangi ortamda ne doğrulanmış?",
+    "expected_ticket_ids": ["1007444.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q08",
+    "question": "Bir öğe üç kez sunulduğu için sistemde tekrar işlenemiyor. Kaynak ticket hangi seçenekleri anlatıyor ve işlemin tamamlandığı doğrulanmış mı?",
+    "expected_ticket_ids": ["1006536.0"],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "Q09",
+    "question": "Windows Server'da BitLocker kurtarma anahtarını Active Directory'den nasıl bulurum?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true
+  },
+  {
+    "question_id": "Q10",
+    "question": "Oracle RMAN ile silinmiş bir datafile'ı yedekten geri yüklemek için hangi komutları çalıştırmalıyım?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true
+  }
+]

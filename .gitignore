@@ -6,4 +6,5 @@ venv/
 __pycache__/
 .ipynb_checkpoints/
 *.csv
+!tickets_reviewed_extra.csv
 outputs_local/
