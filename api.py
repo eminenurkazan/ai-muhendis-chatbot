@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 import rag_service
+from rag_prompts import ExpertiseMode
 
 
 class Utf8JSONResponse(JSONResponse):
@@ -17,7 +18,7 @@ class Utf8JSONResponse(JSONResponse):
 
 app = FastAPI(
     title="Ticket RAG Pilot API",
-    version="0.1.0",
+    version="0.2.0",
     default_response_class=Utf8JSONResponse,
 )
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
+    expertise_mode: ExpertiseMode = "service_desk"
 
 
 class AskResponse(BaseModel):
@@ -33,13 +35,15 @@ class AskResponse(BaseModel):
     insufficient_context: bool
     retrieved_ticket_ids: list[str]
     elapsed_ms: int
+    expertise_mode: ExpertiseMode
+    prompt_version: str
 
 
 @app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest) -> AskResponse:
     """Aranan ilk üç ticketı ve yalnızca onlara dayalı yanıtı döndürür."""
     try:
-        return AskResponse(**rag_service.ask_question(request.question))
+        return AskResponse(**rag_service.ask_question(request.question, expertise_mode=request.expertise_mode))
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
     except rag_service.ServiceUnavailable as exc:

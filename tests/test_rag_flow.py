@@ -23,7 +23,7 @@ class RagFlowTests(unittest.TestCase):
             result = rag_service.ask_question("  UAT sorusu  ")
         embed.assert_called_once_with("UAT sorusu")
         search.assert_called_once_with([0.1, 0.2])
-        generate.assert_called_once_with("UAT sorusu", matches)
+        generate.assert_called_once_with("UAT sorusu", matches, expertise_mode="service_desk")
         self.assertEqual(result["retrieved_ticket_ids"], ["1007444.0", "1006809.0"])
         self.assertEqual(result["used_ticket_ids"], ["1007444.0"])
         self.assertGreaterEqual(result["elapsed_ms"], 0)

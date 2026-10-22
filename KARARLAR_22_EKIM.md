@@ -4,9 +4,11 @@ Bu belge, yerel geliştirme koşullarını ve henüz yanıtı bilinmeyen teslim 
 
 ## Kesinleşenler
 
-- Geliştirme, öğrencinin kendi Windows bilgisayarında ve `D:\ai-muhendis-chatbot` klasöründe yürür. C: diskinde az boş alan olduğu için yeni kullanıcı veritabanı dosyaları oluşturulacaksa D: tercih edilir. Mevcut LocalDB kurulum ve sistem dosyaları C: üzerinde bırakılır.
+- Geliştirme, öğrencinin kendi Windows bilgisayarında ve `D:\ai-muhendis-chatbot` klasöründe yürür. Docker'ın disk konumu `D:\DockerWSL`; SQL Server Express'in program ve veritabanı dosyaları sıkıştırılmamış `D:\SQLServer2022` klasörü altındadır. SQL Server'ın bazı ortak kurulum bileşenleri C: üzerinde kalır.
 - PostgreSQL + pgvector, ticket metinleri ve embedding araması içindir. 22 Ekim kontrolünde 20 onaylı/aramaya hazır kayıt ve 20 chunk vardır. Bunlar yeniden üretilmez.
-- SQL Server LocalDB 2019 (`MSSQLLocalDB`) ve 64 bit ODBC Driver 17 kurulu. MSSQL, tasarıma göre kullanıcı, sohbet, geri bildirim ve uygulama olayları içindir. Yeni kullanıcı veritabanı henüz oluşturulmadı.
+- LocalDB 2019 kullanıcı oturumunda başlatılamadığı için uygulama bağlantısında kullanılmıyor; eski kurulum kaldırılmadı. SQL Server 2022 Express doğrudan Windows'a kuruldu. Bağlantı adı `.\SQLEXPRESS`, sürücü 64 bit ODBC Driver 17, kimlik doğrulaması Windows hesabıdır.
+- `ServisMasasiApp` veritabanında `users`, `chat_sessions`, `chat_messages`, `feedback` ve `app_logs` tabloları oluşturuldu. Kullanıcı/sohbet/mesaj veri erişim katmanı `mssql/repository.py` dosyasındadır; altı yerel entegrasyon testi geçti ve örnek kayıtlar geri alındı. E-posta normalizasyonu için Türkçe harf dönüşümünden bağımsız bir alan kuralı uygulandı. Bağlantı `mssql/verify_sqlexpress.ps1` ile kullanıcı oturumunda da doğrulandı. API henüz bu tablolara yazmıyor.
+- SQL Server motorunun başlatma tipi Manual, SQL Server Browser Disabled olarak seçildi. Bellek ayarında önerilen `max server memory=1410 MB` kabul edildi; bu değer işlemin tüm RAM kullanımına konmuş kesin bir sınır değildir. Bilgisayar yeniden açıldığında MSSQL testi öncesinde hizmetin çalıştığı kontrol edilmelidir.
 - API şimdilik yalnızca `127.0.0.1` üzerinde çalışan yerel pilottur; kimlik doğrulaması ve üretim güvenliği eklenmeden ağa açılmaz.
 - Soru embedding'i Cloudflare BGE-M3 ile, yanıt ise mevcut kişisel ChatGPT oturumu üzerinden üretilir. Bu erişimler şirket hizmeti veya sınırsız üretim kapasitesi sayılmaz. Mevcut token saklama ve kaynak kimliği doğrulama davranışı korunur.
 - Kodun ve testlerin asıl konumu D: projesidir. C: altındaki ChatGPT proje aynası ve `sources/` yalnızca referanstır.
@@ -23,4 +25,4 @@ Bu belge, yerel geliştirme koşullarını ve henüz yanıtı bilinmeyen teslim 
 
 ## Sıradaki teknik iş
 
-Mevcut RAG akışını küçük parçalara ayırırken sonuç biçimi ve kaynak denetimi aynı kalacak. SQL Server bağlantısı PostgreSQL ayarından ayrı tutulacak. Gerçek tablo oluşturma, commit ve GitHub'a gönderme işlemleri ayrıca onaylanacak.
+Modüler LangChain RAG akışı, ayrı MSSQL bağlantısı ve küçük veri erişim katmanı hazırdır. Sonradan eklenen Windows/Oracle uzmanlık prompt'ları API'den seçilebilir; altı yeni çevrimdışı test ve iki seçilmiş gerçek API kontrolü geçti. Kullanıcı/JWT ve sohbet geçmişinin API'ye bağlanması sonraki uygulama işleridir. Son birleşik kontrolde 15 test geçti. Commit ve GitHub'a gönderme adımları kullanıcı onayıyla yapılır; çalışma özeti [CALISMA_NOTU_22_EKIM.md](CALISMA_NOTU_22_EKIM.md) içindedir.

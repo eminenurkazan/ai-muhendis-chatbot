@@ -1,8 +1,8 @@
 # ER taslağı — Akıllı Servis Masası ve Sistem Uzmanı Chatbot
 
-Proje: PRJIC20260201 · Tarih: 2 Ekim 2026 · Sürüm: 0.5
+Proje: PRJIC20260201 · Tarih: 22 Ekim 2026 · Sürüm: 0.7
 
-Bu dosya başlangıç tasarımıdır. Tablolar henüz veritabanlarında oluşturulmadı. Temel, verilen proje belgesi ve Mendeley verisinden hazırlanmış 10 pilot kayıttır.
+Bu belge çalışan PostgreSQL bilgi tabanı ile oluşturulmuş MSSQL uygulama tablolarını birlikte gösterir. PostgreSQL'de 20 onaylı ticket ve 20 arama chunk'ı vardır. SQL Server Express üzerindeki `ServisMasasiApp` veritabanında kullanıcı, sohbet, mesaj, geri bildirim ve log tabloları oluşturuldu; API'nin bu tablolara kayıt yazması henüz uygulanmadı.
 
 ## 1. ER neyi gösterir?
 
@@ -104,7 +104,7 @@ Ticket ve soru-cevap kayıtları için sorun/çözüm alanları kullanılır. Re
 
 - Her kayıt tek bir kaynağa; her chunk tek bir kayda bağlanır.
 - `(record_id, chunk_index)` benzersizdir.
-- Çalışan pilotta Cloudflare Workers AI üzerindeki `@cf/baai/bge-m3` modeli 1024 boyutlu vektör üretmiştir; fiziksel pgvector alanı `vector(1024)` olacaktır. Aynı aramada tek model ve boyut kullanılacak, model kimliği de kayıtla birlikte saklanacaktır. Model gerekçesi [Model_Secimi.md](Model_Secimi.md) dosyasındadır. RAG yanıtı için `gpt-5.6-terra` erişimi yerel/açık kaynak pilotta doğrulanmıştır.
+- Çalışan PostgreSQL şemasında pgvector alanı `vector(1024)` olarak oluşturulmuştur. Cloudflare `@cf/baai/bge-m3` embedding'leri ve model kimliği chunk ile birlikte saklanır; farklı embedding modelleri aynı aramada karıştırılmaz. Model gerekçesi [Model_Secimi.md](Model_Secimi.md) dosyasındadır. RAG yanıtı için `gpt-5.6-terra` erişimi yerel pilotta doğrulanmıştır.
 - Metin ve embedding aynı chunk satırında tutulur. Sadece `review_status=approved` ve `index_status=ready` olan kayıtlar aramaya alınır.
 - İçerik değiştiğinde yeniden indeksleme pending'e alınır. Yeni embedding'ler hazırlandıktan sonra chunk değişimi ve ready durumu PostgreSQL işlemi içinde birlikte kaydedilir. Başarısız işlemde eksik bir chunk grubu aramaya açılmaz.
 - Model değiştiğinde aynı boyutta olsa bile eski ve yeni modellerin vektörleri aynı aramada karıştırılmaz; ilgili indeks yeniden üretilir.
@@ -121,7 +121,8 @@ erDiagram
 
     users {
         uuid id PK
-        string email UK
+        string email
+        string email_normalized UK
         string password_hash
         string role
         boolean is_active
@@ -141,7 +142,10 @@ erDiagram
         int message_seq
         string role
         string content
+        string message_status
+        uuid request_id
         string citations_json
+        string source_snapshot_json
         string model_name
         int input_tokens
         int output_tokens
@@ -154,6 +158,7 @@ erDiagram
         int rating
         string comment
         timestamp created_at
+        timestamp updated_at
     }
     app_logs {
         uuid id PK
@@ -166,7 +171,7 @@ erDiagram
     }
 ```
 
-Bu diyagramdaki tipler kavramsaldır. MSSQL uygulamasında UUID için `uniqueidentifier`, uzun metin için `nvarchar(max)`, tarih için `datetime2`, boolean için `bit` gibi fiziksel tipler seçilecek.
+Bu diyagramdaki tipler okunabilirlik için kavramsal kısa adlarla gösterilir. Uygulanan fiziksel şema [mssql/schema.sql](mssql/schema.sql) dosyasındadır: UUID için `uniqueidentifier`, uzun metin için `nvarchar(max)`, tarih için `datetime2(3)`, boolean için `bit` kullanılır. `email_normalized`, e-postanın baş/son boşlukları çıkarılıp küçük harfe dönüştürülen hesaplanmış alanıdır; benzersizlik bu alan üzerinde sağlanır. Bu alan ve e-posta sorgusu `Latin1_General_100_CI_AS_SC` kuralını kullanır; Türkçe veritabanı ayarının `I/ı` dönüşümünden etkilenmez.
 
 | Tablo | Amacı |
 |---|---|
@@ -181,9 +186,11 @@ Bu diyagramdaki tipler kavramsaldır. MSSQL uygulamasında UUID için `uniqueide
 - Email normalize edilir ve benzersiz tutulur. Parola metni saklanmaz; seçilecek parola karma yönteminin salt/parametreleri içeren kodlanmış çıktısı `password_hash` alanında saklanır. Kriptografik yöntem uygulama aşamasında seçilir.
 - `users.role`: `user`, `admin`. `chat_sessions.expertise_mode`: `service_desk`, `windows_server`, `oracle_db`. `chat_messages.role`: `user`, `assistant`.
 - Mesaj sırası için `(session_id, message_seq)` benzersizdir. JWT'deki kullanıcı kimliği ile sohbet sahibinin eşitliği her sohbet okuma/yazma işleminde kontrol edilir.
+- `message_status`, mesaj durumunu (`pending`, `completed`, `error`); `request_id` aynı isteğe ait olayları izleme kimliğini tutmak için şemada yer alır. Bu alanlar henüz çalışan API'de kullanılmaz.
 - Puan 1–5 arasındadır. Yalnızca assistant mesajı ve ilgili sohbetin sahibi için puan kabul edilir. Mesaj başına en fazla bir puan vardır; kullanıcı kendi puanını güncelleyebilir.
 - Anonim/giriş öncesi olaylar için `app_logs.user_id` boş olabilir. Log ayrıntıları olay bilgisi içerir; parola, JWT ve API anahtarı yazılmaz.
 - Yanıtın `citations_json` alanı, kullanılan PostgreSQL chunk/kayıt kimliklerini, sürüm/hash bilgisini, kaynak adı/URL'sini ve kısa kaynak gösterim bilgisini saklar. Bu, iki veritabanı arasında FK olarak tanımlanmaz; bağlantıyı uygulama yönetir.
+- `source_snapshot_json`, yanıt üretilirken görülen kaynakların kısa metin ve sürüm özetini saklamak için planlanmıştır; ham veri veya gizli bilgi kopyalanmaz.
 - Silinen/güncellenen bilgi kayıtlarının eski mesaj kaynakları izlenebilir kalması için kaynak adı/URL ve içerik sürümü yanıtla birlikte korunur. Gerekirse kaynak kayıtlar fiziksel silme yerine aramadan çıkarılır.
 
 ## 5. Gereksinimlerle eşleme
@@ -203,6 +210,8 @@ Admin panelinde puanların özeti kullanıcı geri bildirimi olarak gösterilir.
 
 ## 6. Şu anki örneğin yerleşimi
 
-Mendeley için bir `knowledge_sources` satırı açılır. `1005127.0` için bir `knowledge_records` satırı oluşturulur. Sorun, kategori, çözüm, sonuç ve kaynak yorumları mevcut pilot kayıttan alınır. Kontrol edilen kısa kayıt bir chunk olarak hazırlanabilir; uzunluk ve içerik gerektirirse birden fazla chunk oluşturulur. 10 pilot kaydın embedding'leri BGE-M3 ile üretilmiş ve bellekte arama doğrulanmıştır. PostgreSQL bağlantısı henüz kurulmadığından bu başarı veritabanındaki `index_status=ready` durumunu temsil etmez.
+PostgreSQL'de Mendeley kaynaklı 20 onaylı ve aramaya hazır ticket ile 20 chunk bulunur. `1005127.0` gibi özgün kimlikler `source_record_id` alanında korunur; her kısa ticketın problem ve çözümü tek arama chunk'ında birlikte tutulur. API soruları bu kayıtları pgvector üzerinden arar. Çoklu chunk ve uzun belge kullanımı henüz sınanmadı.
 
-Sonraki tasarım: [RAG_Akisi.md](RAG_Akisi.md).
+MSSQL tabloları 22 Ekim'de Windows üzerinde doğrudan çalışan SQL Server 2022 Express (`.\SQLEXPRESS`) içindeki `ServisMasasiApp` veritabanında oluşturuldu. Veri ve günlük dosyaları `D:\SQLServer2022` altındadır. Geçici kullanıcı/sohbet/mesaj/puan/log kayıtlarıyla ilişki ve varsayılan değer testi yapılıp işlem geri alındı; beş tablo boş bırakıldı. Kullanıcı/sohbet/mesaj veri erişim katmanı hazırdır ve altı entegrasyon testi geçti. Kullanıcı yetkilendirmesi ve sohbet geçmişinin API'ye bağlanması sonraki işlerdir. Windows/Oracle uzmanlık modu API'de seçilebilir; iki seçilmiş gerçek API kontrolü geçti, geniş uzmanlık değerlendirmesi sonraki iştir. Sohbet geçmişi henüz bağlı olmadığı için mod seçimi otomatik olarak MSSQL'e kaydedilmez. Katmanın kullanımı [mssql/README.md](mssql/README.md) içindedir.
+
+Çalışan arama akışı: [RAG_Akisi.md](RAG_Akisi.md).

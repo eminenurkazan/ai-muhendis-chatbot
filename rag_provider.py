@@ -6,6 +6,7 @@ import re
 import time
 
 import rag_ticket_pilotu as rag
+from rag_prompts import validate_mode
 
 
 class ServiceUnavailable(Exception):
@@ -61,10 +62,11 @@ def _saved_chatgpt_token() -> str:
         return saved["access_token"]
 
 
-def answer_from_matches(question: str, matches: list[tuple[float, dict]]) -> dict:
+def answer_from_matches(question: str, matches: list[tuple[float, dict]], *, expertise_mode: str = "service_desk") -> dict:
+    mode = validate_mode(expertise_mode)
     token = _saved_chatgpt_token()
     try:
         # Kaynak kimlikleri rag.generate_answer -> parse_answer içinde doğrulanır.
-        return rag.generate_answer(token, question, matches)
+        return rag.generate_answer(token, question, matches, expertise_mode=mode)
     finally:
         del token

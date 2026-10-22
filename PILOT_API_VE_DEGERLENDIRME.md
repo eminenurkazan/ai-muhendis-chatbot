@@ -1,6 +1,6 @@
 # Yerel RAG API'si ve ilk düzenli değerlendirme
 
-Tarih: 9 Ekim 2026. Bu belge, `RAG_Akisi.md` içindeki ilk 10 kayıtlık pilotun ardından gelen mevcut durumu anlatır.
+Değerlendirme tarihi: 9 Ekim 2026. Belge durumu: 22 Ekim 2026. Bu belge, ilk 10 kayıtlık pilotun 20 kayda genişletilmesini ve 9 Ekim'deki test sonuçlarını kaydeder. Güncel modüler akış [RAG_Akisi.md](RAG_Akisi.md) içinde anlatılır; buradaki ölçümler 22 Ekim'de yeniden alınmış sonuçlar değildir.
 
 ## Mevcut bilgi tabanı
 
@@ -20,7 +20,7 @@ Set-Location -LiteralPath "D:\ai-muhendis-chatbot"
 
 `127.0.0.1`, bu ilk sürümü yalnızca aynı bilgisayara açar. API'de kullanıcı yetkilendirmesi, kota ve üretim güvenlik önlemleri henüz yoktur; internete veya şirket ağına açılmamalıdır. Cloudflare ve ChatGPT girişleri daha önce `rag_ticket_pilotu.py` ile terminalde yapılıp Windows hesabına bağlı korumalı kayda alınmış olmalıdır. API isteği kendi kendine tarayıcıda giriş başlatmaz; kayıtlı oturum yoksa açıklayıcı hata döndürür.
 
-Tek endpoint `POST http://127.0.0.1:8000/ask` adresidir. JSON gövdesi `{"question":"Sorunuz"}` biçimindedir. Yanıt alanları:
+Tek endpoint `POST http://127.0.0.1:8000/ask` adresidir. JSON gövdesi `{"question":"Sorunuz"}` biçimindedir. 22 Ekim'de isteğe bağlı `expertise_mode` (`service_desk`, `windows_server`, `oracle_db`) eklendi; gönderilmezse `service_desk` seçilir. Uzmanlık yönergeleri ve geçen iki seçilmiş gerçek API kontrolü [PROMPT_YAPISI.md](PROMPT_YAPISI.md) içinde anlatılır; bunlar aşağıdaki 9 Ekim ölçümlerinden ayrıdır. Yanıt alanları:
 
 | Alan | Anlamı |
 |---|---|
@@ -29,6 +29,8 @@ Tek endpoint `POST http://127.0.0.1:8000/ask` adresidir. JSON gövdesi `{"questi
 | `insufficient_context` | `true` ise ilgili kaynak yoktur; teknik çözüm uydurulmaz |
 | `retrieved_ticket_ids` | Aramada gelen ilk üç adayın sırası |
 | `elapsed_ms` | Embedding, arama ve yanıt üretiminin toplam süresi |
+| `expertise_mode` | Bu istekte kullanılan uzmanlık modu |
+| `prompt_version` | Uygulama yönergesinin sürümü |
 
 Örnek istek (sunucu ayrı pencerede açıkken):
 
@@ -37,7 +39,7 @@ $body = @{ question = "Chrome normal penceresinde açılmayan URL, gizli pencere
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/ask" -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) | Format-List
 ```
 
-`rag_service.ask_question()` aynı akışı yeniden kullanılabilir bir Python fonksiyonu olarak sunar. API bu fonksiyonu çağırır. Soru 2000 karakteri geçemez. Hatalı soru `422`, hazır olmayan kayıtlı giriş `503`, diğer yanıt üretim hatası `502` durum koduyla döner. Ham token veya veritabanı bağlantı bilgisi hata yanıtına konmaz.
+`rag_service.ask_question()` aynı akışı yeniden kullanılabilir bir Python fonksiyonu olarak sunar. API bu fonksiyonu çağırır. 22 Ekim'deki düzenlemede akış LangChain Runnable zincirine ayrılmıştır: `rag_chain.py` adımları birleştirir, `rag_repository.py` PostgreSQL aramasını, `rag_provider.py` model erişimini üstlenir. Soru 2000 karakteri geçemez. Hatalı soru `422`, hazır olmayan kayıtlı giriş `503`, diğer yanıt üretim hatası `502` durum koduyla döner. Ham token veya veritabanı bağlantı bilgisi hata yanıtına konmaz.
 
 ## Değerlendirme yöntemi
 
