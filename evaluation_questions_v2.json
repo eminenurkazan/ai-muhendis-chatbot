@@ -1,0 +1,78 @@
+[
+  {
+    "question_id": "V2Q01",
+    "question": "Sürüm yükseltmesinden sonra kullanıcı denetim kayıtlarını gösteren rapor sayfası açılmıyor. Benzer olayda sorun neye bağlanmış, ne yapılmış ve sonucu kim bildirmiş?",
+    "expected_ticket_ids": [
+      "1008656.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q02",
+    "question": "Yeni sunucudan bağlantı kurarken unknown host hatası alıyoruz. IP adresiyle erişim var ama sunucu adıyla yok. Benzer kayıtta ne kontrol edilmiş; bağlantının açılması tüm uygulama sorunlarının da çözüldüğünü gösteriyor mu?",
+    "expected_ticket_ids": [
+      "1009846.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q03",
+    "question": "Veritabanı için otomatik yedek alınmıyor. Benzer kayıtta günlük yedekleme nasıl zamanlanmış? Haftalık tam yedeğin ve geri yüklemenin de çalıştığını söyleyebilir miyiz?",
+    "expected_ticket_ids": [
+      "1006956.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q04",
+    "question": "Üç ONUS inward öğesi initial posting aşamasında takılmış. Kaynak vakada nasıl bir neden bulunmuş, kalan öğe için ne önerilmiş ve bu işlemin gerçekten tamamlandığı doğrulanmış mı?",
+    "expected_ticket_ids": [
+      "1008137.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q05",
+    "question": "Arayüzden kullanıcı rolü veya hesap bitiş tarihi değiştirilirken object is locked or not exists hatası geliyor; sorun yeni kullanıcılarda da var. Kaynakta hangi geçici yaklaşım uygulanmış, UAT ve production için kim neyi doğrulamış?",
+    "expected_ticket_ids": [
+      "1007291.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q06",
+    "question": "Yükseltmeden sonra bazı öğelerin tarama tarihi sistem tarihiyle uyuşmuyor. Benzer ticketta son olarak hangi önlem uygulanmış? Bu, tarihlerin düzeldiğinin kanıtı mı?",
+    "expected_ticket_ids": [
+      "1004444.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q07",
+    "question": "Daha önce iade edilen 12 öğeyi yeniden sunarken aynı alanlara sahip kayıt zaten var hatası alıyoruz; yerel repository temizliği de işe yaramıyor. Benzer vakadaki son denemede ne doğrulanmış? Bunu 12 öğenin tamamı için başarı sayabilir miyiz?",
+    "expected_ticket_ids": [
+      "1010324.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q08",
+    "question": "Servis veya kuyruk takıldığında yüzlerce işlemi elle kontrol etmek yerine e-posta uyarısı almak istiyoruz. Benzer ticketta nasıl bir izleme yaklaşımı önerilmiş ve bu sistemin kurulduğu doğrulanmış mı?",
+    "expected_ticket_ids": [
+      "1006259.0"
+    ],
+    "expected_insufficient_context": false
+  },
+  {
+    "question_id": "V2Q09",
+    "question": "Windows Server'da DHCP failover kurup iki sunucu arasında IP dağıtımını yedeklemek için hangi PowerShell komutlarını çalıştırmalıyım?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true
+  },
+  {
+    "question_id": "V2Q10",
+    "question": "Oracle Data Guard'da birincil veritabanı kapanınca standby veritabanını devreye almak için hangi komutları kullanmalıyım?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true
+  }
+]

@@ -15,7 +15,7 @@ Bu README, 5 Kasım 2026 tarihinde depodaki kod ve geliştirme notları incelene
 | MSSQL | Kullanıcı, sohbet ve mesaj erişim katmanı hazır; API'ye henüz bağlı değil |
 | Arayüz / giriş | Web arayüzü, kullanıcı girişi ve JWT henüz uygulanmadı |
 
-**5 Kasım'daki salt okunur yerel veritabanı kontrolünde 57 onaylı/aramaya hazır Mendeley ticket'ı ve 57 chunk doğrulandı.** İlk pilotta 10, 9 Ekim ek kümesinde 10 ve 5 Kasım inceleme partilerinde toplam 37 kayıt bulunur. Yeni partilerin CSV dosyaları yerel geliştirme klasöründedir; bu README commit'ine dahil değildir. Depodaki kurulum araçları ve yayımlanmış ek CSV, ilk 20 kaydın hazırlama akışını kapsar; temiz bir klon mevcut 57 kaydı kendiliğinden oluşturmaz.
+**5 Kasım'daki son yerel veritabanı kontrolünde 191 onaylı/aramaya hazır Mendeley ticket'ı ve 191 chunk doğrulandı.** Önceki 94 kayda son inceleme partisinden 97 uygun kayıt eklendi. Yeni kayıtların her biri için 1024 boyutlu embedding, içerik ve aramaya hazır durum kontrol edildi. Yeni partilerin CSV dosyaları yerel geliştirme klasöründedir; bu commit'e dahil değildir. Depodaki kurulum araçları ve yayımlanmış ek CSV, ilk 20 kaydın hazırlama akışını kapsar; temiz bir klon mevcut 191 kaydı kendiliğinden oluşturmaz.
 
 5 Kasım yerel çalışma notlarında ayrıca **200 Windows Server ve 114 Oracle olmak üzere 314 soru–cevap adayı** indirildiği belirtilir. Bu çalışma henüz commit edilmemiştir; hazırlama araçları ve indirilen veri bu README commit'ine dahil değildir. İndirme notuna göre adaylar `pending` durumundadır; veritabanı kontrolünde de yalnızca Mendeley kaynakları bulunmuştur. Uzmanlık modu seçmek tek başına bu adayları kullanıma açmaz.
 
@@ -39,7 +39,7 @@ flowchart LR
 
 Benzerlik skoru doğruluk yüzdesi değildir. Kaynak kimliği kontrolü de yanıtın bütün teknik ayrıntılarının doğru olduğunu tek başına kanıtlamaz. Yönergeler, müşteri onayını destek beyanından ve geçici çözümü kalıcı çözümden ayırmayı ister.
 
-Üç uzmanlık modu aynı kaynak havuzunu arar; henüz moda göre alan filtresi uygulanmaz. Güncel yerel havuz 57 Mendeley kaydıdır. Windows Server ve Oracle modları modele ek yönerge verir; ayrı eğitilmiş modeller değildir.
+Üç uzmanlık modu aynı kaynak havuzunu arar; henüz moda göre alan filtresi uygulanmaz. Güncel yerel havuz 191 Mendeley kaydıdır. Windows Server ve Oracle modları modele ek yönerge verir; ayrı eğitilmiş modeller değildir.
 
 ## Gereksinimler
 
@@ -180,7 +180,15 @@ API açık ve hesap erişimleri hazırken 10 soruluk canlı değerlendirme:
 .\.venv\Scripts\python.exe evaluate_api.py
 ```
 
-Bu komut bulut çağrıları yapar ve sonuçları `outputs_local/evaluation_results_v1_*.json` dosyasına kaydeder. Kaynağa bağlılık ayrıca elle incelenmelidir.
+Bu komut varsayılan V1 sorularıyla bulut çağrıları yapar ve sonuçları `outputs_local/evaluation_results_v1_*.json` dosyasına kaydeder. Yeni 191 ticketlık havuz için hazırlanan V2 setini seçmek için:
+
+```powershell
+.\.venv\Scripts\python.exe evaluate_api.py --questions evaluation_questions_v2.json
+```
+
+`--output-dir` ile farklı sonuç klasörü seçilebilir. Her soru sonucu hemen kaydedilir; ayrı metadata dosyası soru ve değerlendirme aracı hashlerini, çalıştırma durumunu ve özet ölçümleri saklar. Kaynağa bağlılık ayrıca elle incelenmelidir.
+
+5 Kasım'daki V2 çalıştırmasında 8 ilgili sorunun beklenen kaynağı ilk sırada bulundu; 2 kaynak dışı soruda sistem yanıt uydurmadı. Ortalama süre 9,324 saniyeydi. Elle incelemede 9 yanıt kaynakla uyumlu, 1 yanıt kaynakta doğrulanmayan küçük bir ek ihtimal nedeniyle kısmen uygun bulundu. Bazı kısa yanıtlarda rehberin ek ayrıntıları eksiktir. Bu 10 soru bütün bilgi tabanının doğruluğunu kanıtlamaz. Ayrıntılar: [V2 değerlendirme sonucu](DEGERLENDIRME_V2_SONUCU.md).
 
 9 Ekim'de belgelenmiş önceki değerlendirmede 8 ilgili sorunun beklenen kaynağı ilk sırada bulunmuş, 2 kaynak dışı soru için doğru çekimserlik gözlenmiş ve ortalama süre yaklaşık 10,1 saniye olmuştur. Bunlar mevcut sürüm için yeniden ölçülmüş sonuçlar değildir. Ayrıntılar: [Pilot API ve değerlendirme](PILOT_API_VE_DEGERLENDIRME.md).
 
