@@ -441,9 +441,12 @@ def sign_out():
             print("Uzak oturumun iptali dogrulanamadi; ChatGPT Ayarlar > Kullanim'dan uygulamayi ayirabilirsin.")
 
 
-def request_body(query, matches, *, expertise_mode="service_desk"):
+def request_body(query, matches, *, expertise_mode="service_desk", history=None):
+    from conversation import validate_history
+    history = validate_history(history)
     context = {
         "question": query,
+        "conversation_history": history,
         "candidates": [
             {"cosine_similarity": score, "ticket": record}
             for score, record in matches
@@ -577,16 +580,15 @@ def parse_answer(text, matches):
         raise RagError("Model aday kayitlarda olmayan veya yinelenen bir kaynak kimligi verdi.")
     if (insufficient and ids) or (not insufficient and not ids):
         raise RagError("Modelin kaynak ve yeterlilik bilgisi tutarsiz.")
-    if any(ticket_id not in answer for ticket_id in ids):
-        raise RagError("Model kullandigi ticket kimligini yanit metninde belirtmedi.")
+    # Source IDs stay in validated metadata; the UI renders them separately.
     result["answer"] = answer.strip()
     return result
 
 
-def generate_answer(token, query, matches, *, expertise_mode="service_desk"):
+def generate_answer(token, query, matches, *, expertise_mode="service_desk", history=None):
     request = Request(
         chat.API + "/responses",
-        data=json.dumps(request_body(query, matches, expertise_mode=expertise_mode), ensure_ascii=False).encode("utf-8"),
+        data=json.dumps(request_body(query, matches, expertise_mode=expertise_mode, history=history), ensure_ascii=False).encode("utf-8"),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json",
                  "Accept": "text/event-stream", "User-Agent": "ai-muhendis-chatbot-rag-pilot/0.1"},
         method="POST",
@@ -622,11 +624,12 @@ def show_answer(result, matches):
             print("Kaynak yorum siralari:", record["source_comment_seq"])
 
 
-def database_matches(query_vector):
+def database_matches(query_vector, *, domains=None):
     matches = database_search.search_chunks(
         query_vector,
         embedding_model=search.MODEL,
         limit=3,
+        domains=domains,
     )
     if not matches:
         raise RagError(

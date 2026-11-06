@@ -18,7 +18,7 @@ class Utf8JSONResponse(JSONResponse):
 
 app = FastAPI(
     title="Ticket RAG Pilot API",
-    version="0.2.0",
+    version="0.3.0",
     default_response_class=Utf8JSONResponse,
 )
 logger = logging.getLogger(__name__)
@@ -37,6 +37,9 @@ class AskResponse(BaseModel):
     elapsed_ms: int
     expertise_mode: ExpertiseMode
     prompt_version: str
+    used_source_ids: list[str]
+    retrieved_source_ids: list[str]
+    sources: list[dict[str, object]]
 
 
 @app.post("/ask", response_model=AskResponse)

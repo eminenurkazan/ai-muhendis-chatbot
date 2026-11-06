@@ -62,11 +62,14 @@ def _saved_chatgpt_token() -> str:
         return saved["access_token"]
 
 
-def answer_from_matches(question: str, matches: list[tuple[float, dict]], *, expertise_mode: str = "service_desk") -> dict:
+def answer_from_matches(question: str, matches: list[tuple[float, dict]], *, expertise_mode: str = "service_desk", history=None) -> dict:
     mode = validate_mode(expertise_mode)
     token = _saved_chatgpt_token()
     try:
         # Kaynak kimlikleri rag.generate_answer -> parse_answer içinde doğrulanır.
-        return rag.generate_answer(token, question, matches, expertise_mode=mode)
+        options = {"expertise_mode": mode}
+        if history:
+            options["history"] = history
+        return rag.generate_answer(token, question, matches, **options)
     finally:
         del token

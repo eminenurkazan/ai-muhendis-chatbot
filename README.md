@@ -1,5 +1,14 @@
 # Akıllı Servis Masası ve Sistem Uzmanı Chatbot
 
+## Güncel uzmanlık bilgi tabanı (6 Kasım 2026)
+
+Yerel bilgi tabanı 446 kayıt içerir: 191 Mendeley ticketı, 156 Windows Server ve 99 Oracle QA. Son seçilmiş 314 uzmanlık adayının tamamı incelendi; 255 kullanımda, 59 dışarıda. Bu belge içindeki eski pilot sayıları tarihsel aşamaları anlatır.
+
+QA kaynak kimliği, soru/cevap yazarları ve ayrı lisanslar korunur. Arama uzmanlık alanına göre filtrelenir; API sources alanı kullanılan kayıtların atıflarını döndürür. Kaynak içeriğinden yeni komut veya kesin çözüm garantisi üretilmez. Son 150 kayıt için resmî karşılaştırmada 137 dar açıklama desteklendi, 13 iddia için yeterli dayanak bulunamadı; ikinci grup kaynak incelemesi onayı kapsamında açıkça işaretlenir.
+
+[Kaynakların kullanımı](UZMANLIK_VERILERININ_KULLANIMI.md), [veri seti hazırlığı](data_sources/README.md) ve [resmî karşılaştırma raporu](RESMI_BELGE_KARSILASTIRMASI_150.md). Ham veri, embedding, yerel DB ve erişim bilgileri Git dışında kalır. Temiz klon 446 kaydı kendiliğinden oluşturmaz.
+
+
 Teknik destek sorularına geçmiş ticket kayıtlarını kaynak göstererek Türkçe yanıt üreten bir staj projesidir. RAG (Retrieval-Augmented Generation) yaklaşımıyla soru önce bilgi tabanında aranır; bulunan kayıtlar dil modeline bağlam olarak verilir. Kaynaklar üzerinde model eğitimi yapılmaz.
 
 Bu README, 5 Kasım 2026 tarihinde depodaki kod ve geliştirme notları incelenerek hazırlanmıştır. Proje şu anda Windows üzerinde terminalden ve yerel FastAPI servisinden kullanılabilen bir pilottur.

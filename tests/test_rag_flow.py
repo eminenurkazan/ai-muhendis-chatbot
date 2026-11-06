@@ -40,5 +40,23 @@ class RagFlowTests(unittest.TestCase):
             rag.parse_answer(raw, [(0.9, {"issueid": "1007444.0"})])
 
 
+    def test_readable_answer_keeps_validated_source_metadata(self):
+        import json
+        source_id = "serverfault:q1166382:a1166413"
+        raw = json.dumps({"answer": "İlgili kaynakta belirtilen adımı bu kapsamda inceleyebilirsin.",
+                          "used_ticket_ids": [source_id], "insufficient_context": False})
+        result = rag.parse_answer(raw, [(0.9, {"issueid": source_id})])
+        self.assertNotIn(source_id, result["answer"])
+        self.assertEqual(result["used_ticket_ids"], [source_id])
+
+    def test_readable_answer_still_rejects_inconsistent_source_metadata(self):
+        import json
+        for ids, insufficient in (([], False), (["known-id"], True), (["known-id", "known-id"], False)):
+            with self.subTest(ids=ids, insufficient=insufficient):
+                raw = json.dumps({"answer": "Kısa açıklama.", "used_ticket_ids": ids,
+                                  "insufficient_context": insufficient})
+                with self.assertRaises(rag.RagError):
+                    rag.parse_answer(raw, [(0.9, {"issueid": "known-id"})])
+
 if __name__ == "__main__":
     unittest.main()
