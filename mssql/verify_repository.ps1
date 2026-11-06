@@ -8,7 +8,7 @@ if (-not (Test-Path -LiteralPath $python)) { throw 'Proje Python ortami bulunama
 $previous = [Environment]::GetEnvironmentVariable('MSSQL_TEST_CONNECTION_STRING', 'Process')
 Push-Location -LiteralPath $projectDir
 try {
-    $env:MSSQL_TEST_CONNECTION_STRING = 'Driver={ODBC Driver 17 for SQL Server};Server=.\SQLEXPRESS;Database=ServisMasasiApp;Trusted_Connection=Yes;'
+    $env:MSSQL_TEST_CONNECTION_STRING = 'Driver={ODBC Driver 18 for SQL Server};Server=.\SQLEXPRESS;Database=ServisMasasiApp;Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate=Yes;'
     & $python -m unittest discover -s tests -p test_mssql_repository.py -v
     $testExitCode = $LASTEXITCODE
 } finally {

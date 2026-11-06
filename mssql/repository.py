@@ -93,6 +93,21 @@ class MSSQLRepository:
         )
         return rows[0] if rows else None
 
+    def find_user_for_login(self, email: str) -> dict | None:
+        """Hash yalnızca kimlik doğrulama hizmetinde kullanılır; API'ye verilmez."""
+        rows = self._query(
+            "SELECT id, email, role, is_active, password_hash FROM dbo.users "
+            "WHERE email_normalized = LOWER(LTRIM(RTRIM(?)) COLLATE Latin1_General_100_CI_AS_SC)",
+            _text(_text(email).strip(), 320),
+        )
+        return rows[0] if rows else None
+
+    def find_user_by_id(self, user_id: str) -> dict | None:
+        rows = self._query(
+            "SELECT id, email, role, is_active FROM dbo.users WHERE id = ?", _uuid(user_id),
+        )
+        return rows[0] if rows else None
+
     def create_session(self, user_id: str, title: str, expertise_mode: str = "service_desk") -> dict:
         if expertise_mode not in {"service_desk", "windows_server", "oracle_db"}:
             raise ValueError("Uzmanlık modu geçersiz.")
@@ -106,13 +121,27 @@ class MSSQLRepository:
             raise RecordNotFoundError("Etkin kullanıcı bulunamadı.")
         return rows[0]
 
-    def list_sessions(self, user_id: str) -> list[dict]:
+    def list_sessions(self, user_id: str, *, offset: int = 0, limit: int = 100) -> list[dict]:
+        if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 101:
+            raise ValueError("Geçersiz sohbet sayfalama sınırı.")
         return self._query(
-            "SELECT TOP (100) s.id, s.title, s.expertise_mode, s.updated_at "
+            "SELECT s.id, s.title, s.expertise_mode, s.created_at, s.updated_at "
             "FROM dbo.chat_sessions s JOIN dbo.users u ON u.id = s.user_id "
-            "WHERE s.user_id = ? AND u.is_active = 1 ORDER BY s.updated_at DESC, s.id",
-            _uuid(user_id),
+            "WHERE s.user_id = ? AND u.is_active = 1 ORDER BY s.updated_at DESC, s.id "
+            "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+            _uuid(user_id), offset, limit,
         )
+
+    def get_session(self, user_id: str, session_id: str) -> dict:
+        rows = self._query(
+            "SELECT s.id, s.title, s.expertise_mode, s.created_at, s.updated_at "
+            "FROM dbo.chat_sessions s JOIN dbo.users u ON u.id=s.user_id "
+            "WHERE s.id=? AND s.user_id=? AND u.is_active=1",
+            _uuid(session_id), _uuid(user_id),
+        )
+        if not rows:
+            raise RecordNotFoundError("Sohbet bulunamadı.")
+        return rows[0]
 
     def _owned_session(self, user_id: str, session_id: str, *, lock: bool = False) -> None:
         # Kilit, aynı sohbete paralel yazan işlemlerin sıra numarası çakışmasını önler.
@@ -156,16 +185,16 @@ class MSSQLRepository:
         self._query("UPDATE dbo.chat_sessions SET updated_at = SYSUTCDATETIME() WHERE id = ?", _uuid(session_id))
         return row
 
-    def list_messages(self, user_id: str, session_id: str, *, after_seq: int = 0) -> list[dict]:
-        if type(after_seq) is not int or after_seq < 0:
+    def list_messages(self, user_id: str, session_id: str, *, after_seq: int = 0, limit: int = 100) -> list[dict]:
+        if type(after_seq) is not int or not 0 <= after_seq <= 2147483647 or type(limit) is not int or not 1 <= limit <= 101:
             raise ValueError("Mesaj başlangıç sırası sıfır veya pozitif olmalı.")
         self._owned_session(user_id, session_id)
         return self._query(
-            "SELECT TOP (100) m.id, m.message_seq, m.role, m.content, m.message_status, m.request_id, "
+            "SELECT TOP (?) m.id, m.message_seq, m.role, m.content, m.message_status, m.request_id, "
             "m.citations_json, m.source_snapshot_json, m.model_name, m.created_at "
             "FROM dbo.chat_messages m JOIN dbo.chat_sessions s ON s.id = m.session_id "
             "JOIN dbo.users u ON u.id = s.user_id "
             "WHERE m.session_id = ? AND m.message_seq > ? AND s.user_id = ? AND u.is_active = 1 "
             "ORDER BY m.message_seq",
-            _uuid(session_id), after_seq, _uuid(user_id),
+            limit, _uuid(session_id), after_seq, _uuid(user_id),
         )

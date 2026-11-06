@@ -9,6 +9,7 @@ import argparse
 from datetime import datetime
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from urllib.error import HTTPError, URLError
@@ -22,11 +23,14 @@ ENDPOINT = "http://127.0.0.1:8000/ask"
 
 
 def ask(question: str) -> dict:
+    token = os.environ.get("APP_ACCESS_TOKEN", "").strip()
+    if not token:
+        raise ValueError("Önce giriş yapıp APP_ACCESS_TOKEN ortam değişkenini tanımla.")
     # Beklenen kaynaklar modele gönderilmez; yalnız soru gönderilir.
     body = json.dumps({"question": question}, ensure_ascii=False).encode("utf-8")
     request = Request(
         ENDPOINT, data=body,
-        headers={"Content-Type": "application/json; charset=utf-8"}, method="POST",
+        headers={"Content-Type": "application/json; charset=utf-8", "Authorization": f"Bearer {token}"}, method="POST",
     )
     with urlopen(request, timeout=180) as response:
         return json.loads(response.read().decode("utf-8"))
@@ -104,6 +108,8 @@ def main() -> None:
     args = parser.parse_args()
     question_path = args.questions.resolve()
     questions = load_questions(question_path)
+    if not os.environ.get("APP_ACCESS_TOKEN", "").strip():
+        parser.error("Önce giriş yapıp APP_ACCESS_TOKEN ortam değişkenini tanımla.")
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     now = datetime.now().astimezone()
