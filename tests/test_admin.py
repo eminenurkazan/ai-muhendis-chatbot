@@ -150,14 +150,15 @@ class AdminUiTests(unittest.TestCase):
         app = self.app("admin").run(timeout=20)
         next(b for b in app.button if b.label == "Yönetim paneli").click().run(timeout=20)
         self.assertFalse(app.exception)
-        self.assertEqual(app.title[0].value, "Raporlama paneli")
+        self.assertEqual(app.title[0].value, "Yönetim paneli")
+        self.assertEqual(app.subheader[0].value, "Raporlama")
         self.assertIn("%75,0", [metric.value for metric in app.metric])
         self.report.assert_called_with(ANY, "test-only", 30)
 
     def test_non_admin_cannot_open_panel_even_with_view_flag(self):
         app = self.app("user", view="admin").run(timeout=20)
         self.assertFalse(app.exception)
-        self.assertNotEqual(app.title[0].value, "Raporlama paneli")
+        self.assertNotEqual(app.title[0].value, "Yönetim paneli")
         self.report.assert_not_called()
 
     def test_forbidden_response_returns_to_chat_next_run(self):

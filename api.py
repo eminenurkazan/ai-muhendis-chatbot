@@ -16,6 +16,7 @@ import rag_service
 import chat_service
 from chat_api import router as chat_router
 from admin_api import router as admin_router
+from kb_api import router as kb_router
 from auth_api import require_user, router as auth_router
 from registration_api import router as registration_router
 from rag_prompts import ExpertiseMode
@@ -34,6 +35,7 @@ app.include_router(registration_router)
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(admin_router)
+app.include_router(kb_router)
 logger = logging.getLogger(__name__)
 
 

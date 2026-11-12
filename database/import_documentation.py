@@ -10,7 +10,13 @@ import ticket_vektor_arama as vectors
 
 
 def load_record(path):
-    row = json.loads(Path(path).read_text(encoding='utf-8'))
+    return validate_row(json.loads(Path(path).read_text(encoding='utf-8')))
+
+
+def validate_row(row):
+    """Rehber kaydının kaynak, kapsam ve komut kurallarını denetler; geçerliyse aynı kaydı döndürür."""
+    if not isinstance(row, dict):
+        raise ValueError('Rehber kaydı JSON nesnesi olmalı.')
     required = ('source_record_id', 'source_name', 'source_url', 'source_version', 'source_author',
                 'license', 'license_url', 'title', 'problem', 'solution', 'limitations',
                 'product_version_environment', 'resolution', 'official_context', 'transformation')

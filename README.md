@@ -437,3 +437,17 @@ Yönetici atamak için (API yeniden başlatılması gerekmez; `MSSQL_CONNECTION_
 ```
 
 `tests/test_admin.py` yetki, hesaplama ve arayüz görünürlüğünü sınar; `ADMIN_REPORT_SQL_TEST=1` gerçek SQL üzerinde, rollback'li bir kontrol de çalıştırır.
+
+
+### Bilgi Merkezi yönetimi (12 Kasım 2026)
+
+Yönetim panelindeki **Bilgi Merkezi** bölümü yalnızca yönetici rolüne açıktır (`/admin/kb/*` uçları `403` döner). Nedeni: bilgi tabanı doğrudan modele bağlam olarak gittiği için içerik kontrollü eklenmelidir (veri zehirleme ve telif riski).
+
+- **Yükleme:** servis masası CSV'si (`issueid`, `problem`, `solution` zorunlu; en fazla 500 satır) veya resmî rehber JSON'u (`data_sources/official_guides` biçimi, yalnız learn.microsoft.com ve docs.oracle.com). Dosya 1 MB ile sınırlıdır, içeriği çalıştırılmaz. Önce **Doğrula** ile önizleme ve hata listesi görülür; hata varsa hiçbir şey yazılmaz.
+- **Onay akışı:** yüklenen kayıtlar `pending` olarak girer, chunk/embedding yoktur ve aranamaz. **İndeksle ve onayla** (en fazla 10) kayıt başına embedding üretir (Cloudflare erişimi gerekir) ve kaydı `approved/ready` yapar. Aynı dosya tekrar yüklenirse kayıtlar çoğalmaz.
+- **Devre dışı bırakma:** kayıt silinmez, `excluded` olur ve aramadan çıkar; geri alınabilir.
+- Oracle belgelerinin telifi Oracle'a aittir; yüklenecek rehber metni kısa, olgu temelli ve kendi cümlelerimizle yazılmış olmalıdır ([KAYNAK_POLITIKASI.md](KAYNAK_POLITIKASI.md)).
+
+`tests/test_knowledge_center.py` doğrulama, yetki ve arayüzü sınar; `KB_SQL_TEST=1` ile gerçek PostgreSQL üzerinde, geri alınan yükleme/onay/devre dışı bırakma testi de çalışır. Yeni uçlar için API ve Streamlit yeniden başlatılmalıdır.
+
+**Yükleme sınırları ve toplu onay:** Varsayılan sınırlar küçüktür (1.000.000 karakter, 500 satır). Büyük dosya gerekirse API ve Streamlit süreçlerinin ikisinde de `KB_MAX_UPLOAD_CHARS` (en çok 20.000.000) ve `KB_MAX_ROWS` (en çok 20.000) ortam değişkenlerini tanımlayıp yeniden başlat; geçersiz değer varsayılana döner. Onay bekleyen kayıtlar için sayfadaki hepsini 10'arlı gruplar halinde onaylayan düğme vardır; her kayıt için Cloudflare embedding isteği gittiğinden çok sayıda kayıt zaman alır.

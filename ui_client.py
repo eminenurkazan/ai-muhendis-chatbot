@@ -148,3 +148,30 @@ def save_feedback(base_url, token, chat_id, request_id, rating, comment=None):
     chat_id, request_id = str(UUID(str(chat_id))), str(UUID(str(request_id)))
     return request_json(base_url, f"/chats/{chat_id}/requests/{request_id}/feedback", method="PUT",
                         token=token, payload={"rating": rating, "comment": comment}, timeout=20)
+
+
+def kb_summary(base_url, token):
+    return request_json(base_url, "/admin/kb/summary", token=token, timeout=30)
+
+
+def kb_records(base_url, token, *, review_status=None, domain=None, record_type=None, query=None, offset=0):
+    from urllib.parse import urlencode
+    params = {key: value for key, value in (("review_status", review_status), ("domain", domain),
+              ("record_type", record_type), ("q", query)) if value}
+    params.update({"offset": int(offset), "limit": 50})
+    return request_json(base_url, "/admin/kb/records?" + urlencode(params), token=token, timeout=30)
+
+
+def kb_upload(base_url, token, payload):
+    return request_json(base_url, "/admin/kb/upload", method="POST", payload=payload, token=token, timeout=60)
+
+
+def kb_approve(base_url, token, ids):
+    return request_json(base_url, "/admin/kb/approve", method="POST", payload={"ids": [str(i) for i in ids]},
+                        token=token, timeout=180)
+
+
+def kb_set_status(base_url, token, record_id, excluded):
+    from uuid import UUID
+    return request_json(base_url, f"/admin/kb/records/{UUID(str(record_id))}/status", method="POST",
+                        payload={"excluded": bool(excluded)}, token=token, timeout=30)

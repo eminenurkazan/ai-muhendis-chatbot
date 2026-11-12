@@ -11,6 +11,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from email_validator import EmailNotValidError, validate_email
 
+import kb_limits
 import ui_client
 from conversation import history_from_messages
 from email_domains import registered_tlds, validate_email_tld
@@ -508,7 +509,17 @@ def render_admin() -> None:
         if st.button("Çıkış yap", use_container_width=True):
             sign_out()
     st.markdown('<div class="eyebrow">TRTEK · YÖNETİM</div>', unsafe_allow_html=True)
-    st.title("Raporlama paneli")
+    st.title("Yönetim paneli")
+    section = st.radio("Bölüm", ["Raporlar", "Bilgi Merkezi"], horizontal=True, key="admin_section",
+                       label_visibility="collapsed")
+    if section == "Bilgi Merkezi":
+        render_knowledge_center()
+    else:
+        render_admin_report()
+
+
+def render_admin_report() -> None:
+    st.subheader("Raporlama")
     days = st.selectbox("Dönem", [7, 30, 90, 365], index=1, format_func=lambda d: f"Son {d} gün")
     try:
         with st.spinner("Rapor hazırlanıyor…"):
@@ -557,6 +568,186 @@ def render_admin() -> None:
         st.subheader("Günlük soru sayısı")
         if report["daily"]:
             st.bar_chart({row["day"]: row["questions"] for row in report["daily"]})
+
+
+STATUS_LABELS = {"pending": "Onay bekliyor", "approved": "Aktif", "excluded": "Devre dışı"}
+DOMAIN_LABELS = {"general_it": "Genel BT", "windows_server": "Windows Server", "oracle_db": "Oracle DB"}
+TYPE_LABELS = {"ticket": "Ticket", "qa": "Soru–cevap", "documentation": "Rehber"}
+KB_MAX_BYTES = kb_limits.MAX_UPLOAD_CHARS
+
+
+def _kb_payload(kind: str, domain: str, license_note: str, uploaded) -> dict | None:
+    """Yüklenen dosyayı güvenli biçimde metne çevirir; dosya içeriği burada hiçbir zaman yorumlanmaz."""
+    if uploaded is None:
+        return None
+    raw = uploaded.getvalue()
+    if len(raw) > KB_MAX_BYTES:
+        st.error(f"Dosya en fazla {KB_MAX_BYTES / 1_000_000:g} MB olabilir.")
+        return None
+    try:
+        content = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        st.error("Dosya UTF-8 veya UTF-8 BOM olmalı.")
+        return None
+    return {"kind": kind, "filename": uploaded.name[:120], "content": content, "domain": domain,
+            "license_note": license_note.strip()}
+
+
+def render_kb_upload() -> None:
+    token = st.session_state.token
+    st.caption("Yüklenen kayıtlar önce **Onay bekliyor** durumunda eklenir ve aranamaz. Onayladığında embedding "
+               "üretilir ve bot kullanmaya başlar. Dosya içeriği çalıştırılmaz.")
+    label = st.radio("Dosya türü", ["Servis masası CSV", "Rehber JSON"], horizontal=True, key="kb_kind")
+    is_csv = label == "Servis masası CSV"
+    domain, license_note = "general_it", ""
+    if is_csv:
+        st.caption("Sütunlar: issueid, problem, solution (zorunlu); category, resolution, resolution_confirmed, "
+                   f"solution_scope, limitations (isteğe bağlı). En fazla {kb_limits.MAX_ROWS} satır.")
+        chosen_domain = st.selectbox("Alan", list(DOMAIN_LABELS.values()), key="kb_domain")
+        domain = next(key for key, value in DOMAIN_LABELS.items() if value == chosen_domain)
+        license_note = st.text_input("Kaynak / lisans notu (zorunlu)", max_chars=200, key="kb_license")
+    else:
+        st.caption("Resmî rehber kaydı: `data_sources/official_guides` biçimi. Yalnız learn.microsoft.com ve "
+                   "docs.oracle.com kaynakları kabul edilir. Oracle belgelerinin telifi Oracle'a aittir; metni "
+                   "kopyalama, kısa ve kendi cümlelerinle yazılmış olgu özeti yükle.")
+    uploaded = st.file_uploader("Dosya", type=["csv" if is_csv else "json"], key=f"kb_file_{label}")
+    payload = _kb_payload("tickets_csv" if is_csv else "guide_json", domain, license_note, uploaded)
+    checked = st.session_state.get("kb_check")
+    if st.button("Doğrula", disabled=payload is None, key="kb_validate"):
+        try:
+            with st.spinner("Dosya doğrulanıyor…"):
+                result = ui_client.kb_upload(API_URL, token, {**payload, "dry_run": True})
+            st.session_state.kb_check = checked = {"payload": payload, "result": result}
+        except ui_client.ApiError as error:
+            st.session_state.pop("kb_check", None)
+            checked = None
+            handle_api_error(error)
+    if checked and payload is not None and checked["payload"] == payload:
+        result = checked["result"]
+        st.write(f"Geçerli kayıt: **{result['valid']}**")
+        for message in result["errors"]:
+            st.warning(message)
+        if result["preview"]:
+            st.dataframe([{"Kimlik": i["id"], "Alan": DOMAIN_LABELS.get(i["domain"], i["domain"]),
+                           "Başlık": i["title"], "Problem": i["problem"]} for i in result["preview"]],
+                         hide_index=True, use_container_width=True)
+        if st.button("Onay bekleyenlere ekle", disabled=bool(result["errors"]) or not result["valid"],
+                     key="kb_stage"):
+            try:
+                with st.spinner("Kayıtlar ekleniyor…"):
+                    done = ui_client.kb_upload(API_URL, token, {**payload, "dry_run": False})
+                st.session_state.pop("kb_check", None)
+                st.session_state.kb_notice = (f"{done['added']} kayıt onay bekleyenlere eklendi; "
+                                              f"{done['already_present']} kayıt zaten vardı.")
+                st.rerun()
+            except ui_client.ApiError as error:
+                handle_api_error(error)
+
+
+def render_knowledge_center() -> None:
+    token = st.session_state.token
+    if notice := st.session_state.pop("kb_notice", None):
+        st.success(notice)
+    try:
+        summary = ui_client.kb_summary(API_URL, token)
+    except ui_client.ApiError as error:
+        if error.status == 403:
+            st.session_state.view = "chat"
+        handle_api_error(error)
+        return
+    count = lambda status: sum(g["count"] for g in summary["groups"] if g["review_status"] == status)
+    columns = st.columns(4)
+    columns[0].metric("Toplam kayıt", summary["total"])
+    columns[1].metric("Aranabilir", summary["searchable"], help="Onaylı ve geçerli embedding'i olan kayıtlar.")
+    columns[2].metric("Onay bekleyen", count("pending"))
+    columns[3].metric("Devre dışı", count("excluded"))
+    st.caption("Bilgi tabanını yalnız yöneticiler değiştirir. Kayıtlar silinmez; devre dışı bırakılanlar aramadan çıkar.")
+    with st.expander("Dosya yükle"):
+        render_kb_upload()
+
+    st.subheader("Kayıtlar")
+    first = st.columns(4)
+    status = first[0].selectbox("Durum", ["Hepsi", *STATUS_LABELS.values()], key="kb_f_status")
+    domain = first[1].selectbox("Alan", ["Hepsi", *DOMAIN_LABELS.values()], key="kb_f_domain")
+    kind = first[2].selectbox("Tür", ["Hepsi", *TYPE_LABELS.values()], key="kb_f_type")
+    query = first[3].text_input("Ara", max_chars=100, key="kb_f_query")
+    filters = {"review_status": next((k for k, v in STATUS_LABELS.items() if v == status), None),
+               "domain": next((k for k, v in DOMAIN_LABELS.items() if v == domain), None),
+               "record_type": next((k for k, v in TYPE_LABELS.items() if v == kind), None),
+               "query": query.strip() or None}
+    if st.session_state.get("kb_filters") != filters:
+        st.session_state.kb_filters, st.session_state.kb_offset = filters, 0
+    offset = st.session_state.get("kb_offset", 0)
+    try:
+        page = ui_client.kb_records(API_URL, token, offset=offset, **filters)
+    except ui_client.ApiError as error:
+        handle_api_error(error)
+        return
+    items = page["items"]
+    st.caption(f"{page['total']} kayıt · gösterilen {offset + 1 if items else 0}–{offset + len(items)}")
+    if items:
+        st.dataframe([{"Kaynak kimliği": i["source_record_id"], "Tür": TYPE_LABELS.get(i["record_type"], ""),
+                       "Alan": DOMAIN_LABELS.get(i["domain"], i["domain"]),
+                       "Durum": STATUS_LABELS.get(i["review_status"], i["review_status"]),
+                       "Kaynak": i["source_name"], "Problem": i["problem"]} for i in items],
+                     hide_index=True, use_container_width=True)
+    nav = st.columns(2)
+    if nav[0].button("Önceki sayfa", disabled=offset == 0, key="kb_prev"):
+        st.session_state.kb_offset = max(0, offset - 50)
+        st.rerun()
+    if nav[1].button("Sonraki sayfa", disabled=page["next_offset"] is None, key="kb_next"):
+        st.session_state.kb_offset = page["next_offset"]
+        st.rerun()
+
+    label = lambda i: f"{i['source_record_id']} · {DOMAIN_LABELS.get(i['domain'], '')} — {i['problem'][:70]}"
+    pending = {i["id"]: i for i in items if i["review_status"] == "pending"}
+    if pending:
+        st.subheader("Onay bekleyenler")
+        chosen = st.multiselect("Onaylanacak kayıtlar (en fazla 10)", list(pending), max_selections=10,
+                                format_func=lambda key: label(pending[key]), key="kb_approve_ids")
+        if st.button("Seçilenleri indeksle ve onayla", disabled=not chosen, key="kb_approve"):
+            try:
+                with st.spinner("Embedding üretiliyor ve kayıtlar indeksleniyor…"):
+                    outcome = ui_client.kb_approve(API_URL, token, chosen)
+                done = sum(1 for r in outcome["items"] if r["status"] in {"indexed", "already"})
+                failed = [r["message"] for r in outcome["items"] if r["status"] == "failed"]
+                st.session_state.kb_notice = f"{done} kayıt aktif; {len(failed)} kayıt başarısız." + (
+                    " " + " / ".join(dict.fromkeys(failed)) if failed else "")
+                st.session_state.pop("kb_approve_ids", None)
+                st.rerun()
+            except ui_client.ApiError as error:
+                handle_api_error(error)
+        if len(pending) > 1 and st.button(f"Sayfadaki {len(pending)} bekleyeni onayla (10'arlı gruplar)",
+                                          key="kb_approve_page"):
+            ids, done, failed = list(pending), 0, []
+            bar = st.progress(0.0, text="Kayıtlar indeksleniyor…")
+            try:
+                for start in range(0, len(ids), 10):
+                    outcome = ui_client.kb_approve(API_URL, token, ids[start:start + 10])
+                    done += sum(1 for r in outcome["items"] if r["status"] in {"indexed", "already"})
+                    failed += [r["message"] for r in outcome["items"] if r["status"] == "failed"]
+                    bar.progress(min(1.0, (start + 10) / len(ids)), text=f"{min(start + 10, len(ids))}/{len(ids)}")
+            except ui_client.ApiError as error:
+                st.session_state.kb_notice = f"İşlem yarıda kaldı: {done} kayıt aktif. {error}"
+                st.rerun()
+            st.session_state.kb_notice = f"{done} kayıt aktif; {len(failed)} kayıt başarısız." + (
+                " " + " / ".join(dict.fromkeys(failed)) if failed else "")
+            st.rerun()
+    manageable = {i["id"]: i for i in items if i["review_status"] in {"approved", "excluded"}}
+    if manageable:
+        st.subheader("Devre dışı bırak / geri al")
+        record_id = st.selectbox("Kayıt", list(manageable), key="kb_status_id",
+                                 format_func=lambda key: f"[{STATUS_LABELS[manageable[key]['review_status']]}] "
+                                                         + label(manageable[key]))
+        excluded = manageable[record_id]["review_status"] == "approved"
+        if st.button("Devre dışı bırak" if excluded else "Geri al", key="kb_toggle"):
+            try:
+                result = ui_client.kb_set_status(API_URL, token, record_id, excluded)
+                st.session_state.kb_notice = "Kayıt güncellendi: " + STATUS_LABELS.get(
+                    "excluded" if result["status"] == "excluded" else result["status"], result["status"])
+                st.rerun()
+            except ui_client.ApiError as error:
+                handle_api_error(error)
 
 
 def main() -> None:
