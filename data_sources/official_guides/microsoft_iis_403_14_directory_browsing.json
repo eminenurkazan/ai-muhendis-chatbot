@@ -1,0 +1,29 @@
+{
+  "source_record_id": "microsoft:kb942062:iis-403-14-directory-listing",
+  "source_name": "Microsoft Learn — Windows Server Troubleshooting",
+  "source_url": "https://learn.microsoft.com/en-us/troubleshoot/developer/webapps/iis/site-behavior-performance/http-403-14-forbidden-webpage",
+  "source_version": "217868fe7331d5beb6a81b44dad46570a0bfa06bfe8fe590ad6b2bb9f78b8a41",
+  "source_author": "Microsoft",
+  "license": "CC-BY-4.0",
+  "license_url": "https://github.com/MicrosoftDocs/SupportArticles-docs/blob/main/LICENSE",
+  "domain": "windows_server",
+  "record_type": "documentation",
+  "title": "IIS sitesi 'HTTP Error 403.14 - Forbidden' veriyor: Directory Browsing ve Default Document ayarı",
+  "problem": "IIS üzerinde barındırılan bir siteyi açınca 'HTTP Error 403.14 - Forbidden: The Web server is configured to not list the contents of this directory' hatası alınıyor. Site yöneticisi bunu IIS yapılandırmasında nasıl giderir?",
+  "product_version_environment": "Kaynak makale 'Internet Information Services' için yazılmıştır ve belirli bir IIS sürümüyle sınırlanmamıştır; hedef kitle web sitesi yöneticileri ve web geliştiricileridir. IIS Yöneticisi (inetmgr.exe) ile yapılandırma erişimi gerekir; kaynak ayrıca bir yetki koşulu belirtmez. Üçüncü yöntem yalnız IIS Express kullanan geliştiriciler içindir.",
+  "commands": [
+    "cd C:\\Program Files\\IIS Express",
+    "appcmd set config /section:directoryBrowse /enabled:true"
+  ],
+  "solution": "Kullanıcı iseniz: Kaynak, hatayı site yöneticisine bildirmenizi söyler.\nSite yöneticisi iseniz: Kaynağa göre hata, sitede Directory Browsing özelliğinin kapalı olması veya varsayılan belgenin (default document) etkin olmaması ya da yanlış yapılandırılması nedeniyle oluşur. Aşağıdaki yöntemlerden biri uygulanır.\nYöntem 1 — IIS'te Directory Browsing özelliğini etkinleştirin:\n1. Başlat > Çalıştır'a inetmgr.exe yazıp IIS Yöneticisi'ni açın.\n2. <sunucu adı> > Web sites altında değiştirmek istediğiniz siteyi seçin.\n3. Features görünümünde Directory Browsing öğesine çift tıklayın.\n4. Actions bölmesinde Enable'ı seçin.\nYöntem 2 — Varsayılan belge ekleyin:\n1. inetmgr.exe ile IIS Yöneticisi'ni açın.\n2. <sunucu adı> > Web sites altında siteyi seçin.\n3. Features görünümünde Default Document öğesine çift tıklayın.\n4. Actions bölmesinde Enable'ı seçin.\n5. Default Document listesinde belge görünmelidir (tercihen ilk sırada). Yoksa Actions bölmesinde Add'i seçip Add Default Document kutusuna varsayılan belgenin adını yazın ve OK'e basın. Dosya sitenin kök klasöründe bulunmalıdır.\nYöntem 3 — IIS Express'te Directory Browsing'i etkinleştirin (yalnız web geliştiricileri, IIS Express kullanılıyorsa): Komut İstemi'ni açıp IIS Express klasörüne gidin:\n```console\ncd C:\\Program Files\\IIS Express\n```\nArdından şu komutu çalıştırın:\n```console\nappcmd set config /section:directoryBrowse /enabled:true\n```\nAppcmd.exe komut satırları için kaynak, 'Getting Started with AppCmd.exe' belgesine yönlendirir.",
+  "limitations": "Bu rehber bir yapılandırma değişikliği içerir; yalnız kaynağın belirttiği 403.14 hatasında ve site yöneticisi tarafından uygulanmalıdır. Directory Browsing etkinleştirmek, sitede varsayılan belge yoksa klasör içeriğinin ziyaretçilere listelenmesine yol açabilir; kaynak bu güvenlik etkisini anlatmaz, bu nedenle kamuya açık sitelerde varsayılan belge eklemek (Yöntem 2) önce değerlendirilmelidir. Kaynak iki yöntemden hangisinin tercih edileceğini söylemez. Başarı teyidi veya üretimde çalıştırma testi yapılmadı.",
+  "resolution": "Kaynakta yöntemlerin hatayı giderdiği genel olarak belirtilmiştir ('To resolve this problem'); belirli bir ortamda sonucun doğrulandığı bildirilmemiştir. Beklenen sonuç: site, dizin içeriğini listeleme veya varsayılan belgeyi sunma yapılandırmasına kavuştuğunda 403.14 hatası kalkar.",
+  "solution_scope": "procedure",
+  "resolution_confirmed": null,
+  "official_verification_status": "official_source_scoped",
+  "official_context": "Microsoft KB942062 (http-403-14-forbidden-webpage) metni kaynakla karşılaştırıldı. SupportArticles-docs deposundaki dosyanın son commit'i 3b17fdb0dc145937df62f9f0b0e6f705e9f69ecc (2025-01-08); makale tarihi 22.10.2024. Bu bir onarım veya bağımsız ortam testi değildir.",
+  "transformation": "Microsoft makalesinin belirti, kullanıcı/yönetici çözümü ve üç yöntem bölümleri Türkçe özetlendi; iki komut bire bir korunmuştur. Güvenlik etkisi notu kaynakta bulunmadığı için sınırlamalar bölümünde açıkça bize ait uyarı olarak işaretlenmiştir.",
+  "retrieved_at": "2026-11-12",
+  "execution_tested": false,
+  "source_snapshot_sha256": "217868fe7331d5beb6a81b44dad46570a0bfa06bfe8fe590ad6b2bb9f78b8a41"
+}

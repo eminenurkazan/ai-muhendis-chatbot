@@ -22,6 +22,21 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(reference['source_author'], 'Microsoft')
         self.assertIs(reference['execution_tested'], False)
 
+    def test_commands_are_optional_but_must_appear_in_solution(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'record.json'
+            for commands, valid in (([], True), (['not in the guide'], False), (None, False)):
+                row = copy.deepcopy(self.row)
+                if commands is None:
+                    row.pop('commands')
+                else:
+                    row['commands'] = commands
+                path.write_text(json.dumps(row), encoding='utf-8')
+                if valid:
+                    self.assertEqual(load_record(path)['commands'], [])
+                else:
+                    with self.assertRaises(ValueError): load_record(path)
+
     def test_missing_conditions_or_mismatched_cache_are_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'record.json'

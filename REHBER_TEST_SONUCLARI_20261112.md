@@ -64,3 +64,31 @@ Boş sohbet açıldığında kullanıcıya açıklama ve yükleniyor göstergesi
 - outputs_local/oracle_guide_first_20261112/source.html — özgün Oracle kaynak görüntüsü.
 
 Bu yerel kanıtlar Git dışında tutulur. Depodaki yapılandırılmış rehber kayıtlarında kaynak URL ve hash bilgileri vardır. Depoyu klonlamak, PostgreSQL kayıtlarını veya embedding önbelleğini kendiliğinden taşımaz; aktarım ayrıca çalıştırılmalıdır.
+
+## Üçüncü rehber: domain join DNS çözümleme (12 Kasım 2026)
+
+- Kaynak: Microsoft KB4341920 (CC-BY-4.0), kayıt `microsoft:kb4341920:domain-join-dns-resolution`. Kaynak politikası: [KAYNAK_POLITIKASI.md](KAYNAK_POLITIKASI.md).
+- Aktarım: önceki 448 kayıt/chunk değişmedi, toplam 449. Kendi vektörüyle ilk üçte bulundu (`verify`).
+- Doğal dil kontrolü (windows_server modu, rehber cümlelerinden farklı soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı; `nltest /dsgetdc` komutu korundu, komutun yalnız sınama yaptığı ve onarım yapmadığı belirtildi, NetBIOS yerine DNS adı uyarısı ve NetSetup.log eklendi. Süre 12,4 sn (rag_service ölçümü). Kaynakta olmayan çıktı yorumu eklenmedi.
+- Komut gerçek AD ortamında çalıştırılmadı; `execution_tested=false`.
+
+## Dördüncü rehber: IIS HTTP 403.14 (12 Kasım 2026)
+
+- Kaynak: Microsoft KB942062 (CC-BY-4.0), kayıt `microsoft:kb942062:iis-403-14-directory-listing`. Önceki 449 kayıt/chunk değişmedi, toplam 450. Kendi vektörüyle ilk üçte bulundu.
+- Doğal dil kontrolü (windows_server modu): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt önce Default Document yönteminin uygun olduğunu söyledi, Directory Browsing'in güvenlik etkisini belirtti. Süre 11,4 sn.
+- Elle değerlendirme: Güvenlik uyarısı kaynakta değil, rehber kaydının bize ait sınırlamalar bölümündedir; yanıt bunu kaynaktaymış gibi sunmadı ama "kaynak" ile "bizim notumuz" ayrımı yanıt metninde görünmüyor. "Site yöneticisi yetkisi gerektirir" ifadesi kaynak tarafından açıkça belirtilmiş bir yetki koşulu değildir (kaynak hedef kitleyi site yöneticileri olarak belirtir); küçük bir çıkarımdır.
+- Komutlar gerçek ortamda çalıştırılmadı; `execution_tested=false`.
+
+## Beşinci rehber: AD hesap kilitlenmesi, EventCombMT (12 Kasım 2026)
+
+- Kaynak: Microsoft KB824209 (CC-BY-4.0), kayıt `microsoft:kb824209:ad-account-lockout-eventcombmt`. Önceki 450 kayıt/chunk değişmedi, toplam 451. Kendi vektörüyle ilk üçte bulundu.
+- Doğal dil kontrolü (windows_server modu): beklenen kaynak ilk sırada ve yanıtta kullanıldı; menü adımları kaynağa uygun, "olayları toplar, nedeni belirlemez, kilidi açmaz" sınırı korundu. Süre 10,4 sn.
+- Elle değerlendirme, eksikler: (1) Yanıt, aracın ayrı indirilmesi gerektiğini (Account Lockout and Management Tools / ALTools.exe) söylemedi. (2) Hazır aramadaki olay kimliklerinin eski Windows sürümlerine ait olduğu ve güncel karşılıklarının doğrulanmadığı uyarısı yanıtta yok. (3) "Okuma yetkisi olmalıdır" ifadesi kaynakta açıkça yazmaz; rehber kaydındaki bize ait nottur ve yanıtta kaynak koşulu gibi duruyor. Bu üç nokta prompt veya rehber metninin iyileştirme fırsatıdır; yanıt kaynakla çelişmiyor ama eksik.
+- Komut/araç gerçek ortamda çalıştırılmadı; `execution_tested=false`.
+
+## Altıncı rehber: IIS uygulama havuzu kapanma süresi, Event ID 5013 (12 Kasım 2026)
+
+- Kaynak: Microsoft KB2634635 (CC-BY-4.0), kayıt `microsoft:kb2634635:iis-apppool-shutdown-5013`. Önceki 451 kayıt/chunk değişmedi, toplam 452. Kendi vektörüyle ilk üçte bulundu.
+- Doğal dil kontrolü (windows_server modu, olay metnini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt ShutdownTimeLimit (varsayılan 90 sn), zorla kapatma/geri dönüştürme, iki inceleme yolu (süreyi kontrol etme, w3wp.exe bellek dökümü) ve "süreyi artırmak nedeni çözmez" sınırını doğru aktardı. Süre 12,3 sn.
+- Elle değerlendirme: Yanıt rehberin IIS 7.0/7.5 kapsamını açıkça belirtti ve kullanıcının IIS sürümünü sordu; bu sürüm sınırının korunduğunu gösteren iyi bir davranıştır. Kaynakta olmayan komut veya ayar adımı uydurulmadı.
+- Sınır: Kaynak 2020 tarihli ve IIS 7.0/7.5 içindir; yeni sürümler için geçerliliği doğrulanmadı. Komut içermez, gerçek ortamda denenmedi (`execution_tested=false`).

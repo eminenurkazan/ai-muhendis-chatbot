@@ -421,3 +421,19 @@ API güncellendikten sonra yeniden başlatılmalıdır. `tests/test_feedback.py`
 ### İlk resmî rehberler (12 Kasım 2026)
 
 Windows AD çoğaltma raporu ve Oracle 19c tahmini SQL planı rehberleri eklendi; toplam bilgi tabanı 448 kayıt/chunk. Aktarım, kaynaklı yanıt, kullanıcı kontrolleri ve açık zaman aşımı sorunu [rehber test raporunda](REHBER_TEST_SONUCLARI_20261112.md) ayrı gösterilir. Komutlar gerçek AD/Oracle ortamında çalıştırılmadı.
+
+
+### Admin raporlama paneli (12 Kasım 2026)
+
+Yönetici rolündeki kullanıcılar Streamlit kenar çubuğunda **Yönetim paneli** düğmesini görür. Panel `GET /admin/report?days=30&top=10` ucunu kullanır; uç `403` ile yalnız `role=admin` kullanıcılara açıktır (rol her istekte MSSQL kaydından okunur, JWT'den değil). Panel: soru/sohbet/kullanıcı sayıları, ortalama yanıt süresi, **en çok sorulan sorular**, puan dağılımı, uzmanlık alanına ve güne göre soru sayısı.
+
+Chatbot başarısı iki ayrı ölçüyle gösterilir: **memnuniyet** (puanlanan yanıtlarda 4–5 oranı) ve **kaynaklı yanıt oranı** (`insufficient_context=false`). İkisi de yanıtın teknik doğruluğunun bağımsız kanıtı değildir; puanlanan yanıt azsa yorumlarken dikkatli ol. En çok sorulan sorular, aynı metinli (büyük/küçük harf ve baş/son boşluk farkı yok sayılır) soruların birebir gruplanmasıdır; anlamca benzer sorular birleştirilmez.
+
+Yönetici atamak için (API yeniden başlatılması gerekmez; `MSSQL_CONNECTION_STRING` tanımlı olmalı):
+
+```powershell
+.\.venv\Scripts\python.exe -m mssql.promote_admin kullanici@example.com
+.\.venv\Scripts\python.exe -m mssql.promote_admin kullanici@example.com --user   # geri al
+```
+
+`tests/test_admin.py` yetki, hesaplama ve arayüz görünürlüğünü sınar; `ADMIN_REPORT_SQL_TEST=1` gerçek SQL üzerinde, rollback'li bir kontrol de çalıştırır.

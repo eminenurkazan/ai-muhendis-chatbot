@@ -1,0 +1,29 @@
+{
+  "source_record_id": "microsoft:kb4341920:domain-join-dns-resolution",
+  "source_name": "Microsoft Learn — Windows Server Troubleshooting",
+  "source_url": "https://learn.microsoft.com/en-us/troubleshoot/windows-server/active-directory/domain-join-networking-errors",
+  "source_version": "6d7dcedb4764cc17e7f742f809c9320dec6cadb30399a08919114135a37da0d8",
+  "source_author": "Microsoft",
+  "license": "CC-BY-4.0",
+  "license_url": "https://github.com/MicrosoftDocs/SupportArticles-docs/blob/main/LICENSE",
+  "domain": "windows_server",
+  "record_type": "documentation",
+  "title": "Etki alanına katılırken DNS çözümleme hatasında etki alanı denetleyicisini nltest ile sınama",
+  "problem": "Bir Windows bilgisayarı Active Directory etki alanına katarken 'An attempt to resolve the DNS name of a DC in the domain being joined has failed', 'Network name cannot be found' veya 'The format of the specified network name is invalid' hatası alınıyor; istemci etki alanı denetleyicisini bulabiliyor mu nasıl sınanır?",
+  "product_version_environment": "Kaynak: desteklenen Windows Server sürümleri ve etki alanına katılan Windows istemcileri; AD DS ortamı. nltest komutu etki alanına katılmak isteyen bilgisayarda çalıştırılır. Kaynak bu adım için ayrı bir yetki koşulu belirtmez.",
+  "commands": [
+    "nltest /dsgetdc:<DNS domain name> /force",
+    "nltest /dsgetdc:<netbios domain name> /force"
+  ],
+  "solution": "Kaynak, bu hatalarda şu tanı adımlarını önerir:\n1. Etki alanı adını yazarken NetBIOS adını (ör. contoso) değil DNS adını (ör. contoso.com) girin.\n2. Bilgisayarın hedef etki alanının DNS bölgesini barındıran veya o etki alanındaki adları çözebilen bir DNS sunucusuna ulaşabildiğini doğrulayın. İstemcide tercih edilen DNS olarak doğru sunucunun ayarlı olduğundan ve bu sunucuyla bağlantı olduğundan emin olun. Bunu şu komutlardan biriyle sınayın:\n```console\nnltest /dsgetdc:<DNS domain name> /force\n```\n```console\nnltest /dsgetdc:<netbios domain name> /force\n```\n3. 'The format of the specified network name is invalid' hatasında ek olarak ağ bağdaştırıcısı sürücüsünün güncel olduğunu, katılan istemci ile hedef etki alanı denetleyicisi arasında gerekli bağlantı noktaları ve protokoller üzerinden erişim bulunduğunu doğrulayın. Kaynak, TCP Chimney Offload ve IP offloading özelliklerinin kapatılmasını da sayar; bu ağ ayarı değişikliğidir.\n4. 'Network name cannot be found' hatasında kaynak ağ bağdaştırıcısı sürücüsünün güncellenebileceğini de belirtir.\n5. Hata kalıcıysa domain join ayrıntıları istemcide %windir%\\debug\\NetSetup.log dosyasındadır; bu günlük varsayılan olarak etkindir.",
+  "limitations": "nltest komutu yalnızca etki alanı denetleyicisinin bulunup bulunamadığını sınar; sorunu onarmaz. Kaynak bu komutun beklenen çıktısını göstermez; çıktının nasıl yorumlanacağı rehberde verilmez. Sürücü güncelleme ve TCP Chimney/IP offloading kapatma adımları sistem yapılandırmasını değiştirir; yalnızca kaynağın belirttiği hata iletilerinde, kaynakla birlikte değerlendirilmelidir. Kaynaktaki diğer hata iletileri (RID havuzu, RPC, Windows 7 özel durumu) bu rehberin kapsamı dışındadır. Başarı teyidi veya üretimde çalıştırma testi yapılmadı.",
+  "resolution": "Kaynakta bu adımların hatayı kesin olarak giderdiği bildirilmemiştir; adımlar DNS çözümleme ve bağlantı sorununu daraltmaya yöneliktir. Komutun beklenen çıktısı kaynakta gösterilmez.",
+  "solution_scope": "procedure",
+  "resolution_confirmed": null,
+  "official_verification_status": "official_source_scoped",
+  "official_context": "Microsoft KB4341920 (domain-join-networking-errors) içindeki DNS çözümleme ve 'Network name cannot be found' / 'format of the specified network name is invalid' bölümleri kaynakla karşılaştırıldı. SupportArticles-docs deposundaki dosyanın son commit'i 2628655f8c73570b34344e9a1a37f3a946725398 (2026-02-18). Bu bir onarım veya bağımsız ortam testi değildir.",
+  "transformation": "Microsoft makalesinin ilgili üç hata iletisi bölümü tek tanı rehberinde birleştirilip Türkçe özetlendi; iki nltest komutu bire bir korunmuştur. RID havuzu, RPC, bağlantı sayısı ve Windows 7 bölümleri dışarıda bırakıldı.",
+  "retrieved_at": "2026-11-12",
+  "execution_tested": false,
+  "source_snapshot_sha256": "6d7dcedb4764cc17e7f742f809c9320dec6cadb30399a08919114135a37da0d8"
+}

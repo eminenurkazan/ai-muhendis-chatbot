@@ -24,7 +24,9 @@ def load_record(path):
             or row.get('official_verification_status') != 'official_source_scoped'
             or row.get('execution_tested') is not False):
         raise ValueError('İlk rehber aktarımı için kaynak/kapsam doğrulaması geçersiz.')
-    if not row.get('commands') or any(not isinstance(c, str) or not c.strip() or c not in row['solution'] for c in row['commands']):
+    # Komut zorunlu değildir (bazı rehberler yalnız çözüm adımlarıdır); varsa rehberde bire bir bulunmalıdır.
+    commands = row.get('commands')
+    if not isinstance(commands, list) or any(not isinstance(c, str) or not c.strip() or c not in row['solution'] for c in commands):
         raise ValueError('Komutlar tam rehberde bulunmalı.')
     if len(embedding_text(row)) > 12000:
         raise ValueError('Rehber çok uzun: ön koşulları koruyan ayrı alt rehberler hazırlayın.')
