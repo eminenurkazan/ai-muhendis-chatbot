@@ -5,6 +5,7 @@ from functools import partial
 from langchain_core.runnables import RunnableLambda
 
 from conversation import retrieval_question, validate_history
+import request_context
 import rag_provider
 import rag_repository
 from rag_prompts import PROMPT_VERSION, validate_mode
@@ -13,14 +14,17 @@ from rag_sources import source_reference
 
 def _embed(question: str, *, history=None) -> dict:
     query = retrieval_question(question, history or [])
-    return {'question':question,'vector':rag_provider.embed_question(query)}
+    with request_context.stage('embed'):
+        vector=rag_provider.embed_question(query)
+    return {'question':question,'vector':vector}
 
 
 def _retrieve(state: dict, *, expertise_mode: str = 'service_desk') -> dict:
-    if expertise_mode=='service_desk':
-        matches=rag_repository.search_matches(state['vector'])
-    else:
-        matches=rag_repository.search_matches(state['vector'],expertise_mode=expertise_mode)
+    with request_context.stage('retrieve'):
+        if expertise_mode=='service_desk':
+            matches=rag_repository.search_matches(state['vector'])
+        else:
+            matches=rag_repository.search_matches(state['vector'],expertise_mode=expertise_mode)
     return {'question':state['question'],'matches':matches}
 
 
@@ -29,7 +33,8 @@ def _answer(state: dict, *, expertise_mode: str = 'service_desk', history=None) 
     options = {'expertise_mode': expertise_mode}
     if history:
         options['history'] = history
-    result=rag_provider.answer_from_matches(state['question'],matches,**options)
+    with request_context.stage('llm'):
+        result=rag_provider.answer_from_matches(state['question'],matches,**options)
     used=result['used_ticket_ids']
     retrieved=[record['issueid'] for _,record in matches]
     return {

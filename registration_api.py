@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
+import app_log
 import registration_service as service
 
 
@@ -68,10 +69,14 @@ class RegisteredUser(BaseModel):
 @router.post("/register", status_code=201, response_model=RegisteredUser)
 def register(request: RegisterRequest):
     try:
-        return service.register_user(request.email, request.password.get_secret_value())
+        user = service.register_user(request.email, request.password.get_secret_value())
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
     except service.RegistrationConflict as exc:
+        app_log.log_event("warning", "auth.register_conflict")
         raise HTTPException(status_code=409, detail=str(exc)) from None
     except service.RegistrationUnavailable as exc:
+        app_log.log_event("error", "auth.register_unavailable")
         raise HTTPException(status_code=503, detail=str(exc)) from None
+    app_log.log_event("info", "auth.register_success", user_id=str(user["id"]))
+    return user

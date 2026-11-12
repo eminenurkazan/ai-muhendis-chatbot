@@ -175,3 +175,14 @@ def kb_set_status(base_url, token, record_id, excluded):
     from uuid import UUID
     return request_json(base_url, f"/admin/kb/records/{UUID(str(record_id))}/status", method="POST",
                         payload={"excluded": bool(excluded)}, token=token, timeout=30)
+
+
+def log_summary(base_url, token, days=7):
+    return request_json(base_url, f"/admin/logs/summary?days={int(days)}", token=token, timeout=30)
+
+
+def logs(base_url, token, *, days=7, level=None, event_type=None, query=None, offset=0):
+    from urllib.parse import urlencode
+    params = {key: value for key, value in (("level", level), ("event_type", event_type), ("q", query)) if value}
+    params.update({"days": int(days), "offset": int(offset), "limit": 50})
+    return request_json(base_url, "/admin/logs?" + urlencode(params), token=token, timeout=30)

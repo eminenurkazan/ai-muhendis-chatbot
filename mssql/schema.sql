@@ -107,6 +107,7 @@ CREATE TABLE dbo.app_logs (
     CONSTRAINT CK_app_logs_details CHECK (details_json IS NULL OR ISJSON(details_json) = 1)
 );
 CREATE INDEX IX_app_logs_correlation ON dbo.app_logs(correlation_id, created_at);
+CREATE INDEX IX_app_logs_created ON dbo.app_logs(created_at DESC);
 
 COMMIT TRANSACTION;
 END TRY

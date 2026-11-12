@@ -451,3 +451,27 @@ Yönetim panelindeki **Bilgi Merkezi** bölümü yalnızca yönetici rolüne aç
 `tests/test_knowledge_center.py` doğrulama, yetki ve arayüzü sınar; `KB_SQL_TEST=1` ile gerçek PostgreSQL üzerinde, geri alınan yükleme/onay/devre dışı bırakma testi de çalışır. Yeni uçlar için API ve Streamlit yeniden başlatılmalıdır.
 
 **Yükleme sınırları ve toplu onay:** Varsayılan sınırlar küçüktür (1.000.000 karakter, 500 satır). Büyük dosya gerekirse API ve Streamlit süreçlerinin ikisinde de `KB_MAX_UPLOAD_CHARS` (en çok 20.000.000) ve `KB_MAX_ROWS` (en çok 20.000) ortam değişkenlerini tanımlayıp yeniden başlat; geçersiz değer varsayılana döner. Onay bekleyen kayıtlar için sayfadaki hepsini 10'arlı gruplar halinde onaylayan düğme vardır; her kayıt için Cloudflare embedding isteği gittiğinden çok sayıda kayıt zaman alır.
+
+
+### Uygulama günlüğü ve Günlükler ekranı (12 Kasım 2026)
+
+Olaylar MSSQL `app_logs` tablosuna yazılır. Yazma arka plandaki bir iş parçacığında, kısa bir transaction ile yapılır; istek beklemez ve yazma başarısız olursa istek bozulmaz. Her isteğe bir **korelasyon kimliği** verilir (`X-Request-ID` yanıt başlığı); aynı isteğin olayları bu kimlikle bulunur.
+
+- **Kaydedilen olaylar:** `auth.login_success` / `auth.login_failed` / `auth.login_unavailable`, `auth.register_success` / `auth.register_conflict`, `chat.ask_completed` / `chat.ask_failed`, `chat.feedback_saved`, `kb.upload_staged` / `kb.approve` / `kb.exclude` / `kb.restore`, `http.server_error` ve `http.unhandled_exception`.
+- **Aşama süreleri:** `chat.ask_completed` olayı toplam süreyi ve `stage_ms` içinde embedding (`embed`), arama (`retrieve`) ve model (`llm`) sürelerini içerir. Aralıklı yavaşlık/zaman aşımı sorununda hangi aşamanın geciktiği buradan görülür.
+- **Yazılmayanlar:** parola, token, API anahtarı, soru ve yanıt metni, geri bildirim yorumu, e-posta adresi (başarısız girişte). `password`, `token`, `secret`, `authorization`, `api_key`, `cookie`, `credential`, `session` içeren anahtarlar `[gizli]` olarak maskelenir; metinler 300 karaktere kısaltılır. Başarısız girişte yalnız istemci IP adresi tutulur.
+- **Görüntüleme:** Yönetim paneli → **Günlükler**. Dönem, düzey, olay ve arama (olay adı, e-posta veya istek kimliği) süzgeçleri; seçilen kaydın ayrıntısı JSON olarak görünür. Uçlar: `GET /admin/logs`, `GET /admin/logs/summary` (yalnız admin).
+- **Saklama:** Günlükler otomatik silinmez. Zamanla büyüyeceği için gerektiğinde eski kayıtlar DBA tarafından temizlenmelidir.
+- **Kurulum:** Mevcut veritabanında bir kez `python -m mssql.upgrade_app_logs` çalıştırılır (zaman indeksi; veri değişmez). Birim testleri günlüğü kapatır; `APP_LOG_IN_TESTS=1` ile açılabilir, `APP_LOG_DISABLED=1` günlüğü her yerde kapatır.
+
+`tests/test_app_logs.py` maskeleme, bloklamama, olay noktalarını (soru/yanıt metni yazılmadığını dahil), yönetici yetkisini ve arayüzü sınar; `APP_LOG_SQL_TEST=1` gerçek SQL'de geri alınan yazma/okuma/süzme testini de çalıştırır.
+
+### SQL Server bağlantı yavaşlığı: AUTO_CLOSE ve bellek (12 Kasım 2026)
+
+Girişte "Hesap hizmetine ulaşılamıyor (503)" hatası, SQL Server'ın bağlantıya geç yanıt vermesinden (zaman aşımı 258) kaynaklandı. Kontrolde `ServisMasasiApp` veritabanında **AUTO_CLOSE açıktı** (boşta kapanıp bağlantıda yeniden açılır) ve SQL Server fiziksel belleğin az olduğunu bildiriyordu (`process_physical_memory_low`; 8 GB bilgisayarda boş RAM ~800 MB). Veritabanı için şu ayar kapatıldı (veri değişmedi):
+
+```sql
+ALTER DATABASE ServisMasasiApp SET AUTO_CLOSE OFF;
+```
+
+Yeni kurulumda bu ayar ayrıca kontrol edilmelidir (`SELECT name, is_auto_close_on FROM sys.databases`). Uygulama tarafında MSSQL giriş süresi 15 saniyeye çıkarıldı ve zaman aşımında bir kez yeniden denenir (`MSSQL_LOGIN_TIMEOUT`, 1–60). Bellek baskısı sürerse `min server memory` ayarı değerlendirilebilir; bu ayar değiştirilmedi.

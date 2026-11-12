@@ -3,10 +3,11 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
+import app_log
 import auth_service as service
 from registration_api import RegistrationRoute
 
@@ -50,13 +51,20 @@ def require_user(credentials: HTTPAuthorizationCredentials | None = Depends(bear
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(request: LoginRequest):
+def login(request: LoginRequest, http_request: Request):
+    # E-posta ve parola günlüğe yazılmaz; yalnız istemci adresi ve sonuç kaydedilir.
+    client_ip = http_request.client.host if http_request.client else None
     try:
-        return service.login(request.email, request.password.get_secret_value())
+        result = service.login(request.email, request.password.get_secret_value())
     except service.AuthenticationError as exc:
+        app_log.log_event("warning", "auth.login_failed", details={"client_ip": client_ip})
         raise _unauthorized(str(exc)) from None
     except service.AuthenticationUnavailable as exc:
+        app_log.log_event("error", "auth.login_unavailable", details={"client_ip": client_ip})
         raise HTTPException(status_code=503, detail=str(exc)) from None
+    app_log.log_event("info", "auth.login_success", user_id=str(result["user"]["id"]),
+                      details={"client_ip": client_ip})
+    return result
 
 
 @router.get("/me", response_model=UserInfo)

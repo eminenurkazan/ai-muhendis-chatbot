@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+import app_log
 from auth_api import require_user
 import chat_service as service
 from rag_prompts import ExpertiseMode
@@ -105,5 +106,9 @@ def list_messages(chat_id: UUID, after_seq: int = Query(default=0, ge=0, le=2147
 @router.put("/{chat_id}/requests/{request_id}/feedback", response_model=FeedbackInfo)
 def save_feedback(chat_id: UUID, request_id: UUID, request: FeedbackRequest,
                   user: dict = Depends(require_user)):
-    return _call(service.save_feedback, str(user["id"]), str(chat_id), str(request_id),
-                 request.rating, request.comment)
+    saved = _call(service.save_feedback, str(user["id"]), str(chat_id), str(request_id),
+                  request.rating, request.comment)
+    # Yorum metni günlüğe yazılmaz.
+    app_log.log_event("info", "chat.feedback_saved", user_id=str(user["id"]), details={
+        "chat_id": str(chat_id), "rating": request.rating, "has_comment": bool(request.comment)})
+    return saved

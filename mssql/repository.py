@@ -7,6 +7,7 @@ user_id ileride doğrulanmış oturumdan gelmelidir; tek başına kimlik doğrul
 from __future__ import annotations
 
 import json
+import re
 from contextlib import closing
 from uuid import UUID, uuid4
 
@@ -30,6 +31,14 @@ def _uuid(value: str) -> str:
         return str(UUID(str(value)))
     except (ValueError, TypeError, AttributeError):
         raise ValueError("Geçerli bir kayıt kimliği gerekli.") from None
+
+
+def _is_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
 
 
 def _text(value: str, maximum: int | None = None) -> str:
@@ -262,6 +271,46 @@ class MSSQLRepository:
             json.dumps(response, ensure_ascii=False, allow_nan=False), response.get("elapsed_ms"),
             str(answer["id"]),
         )
+
+    def admin_logs(self, *, days: int = 7, level: str | None = None, event_type: str | None = None,
+                   query: str | None = None, offset: int = 0, limit: int = 50) -> dict:
+        """Admin günlük listesi (salt okunur). Süzgeçler yalnız verildiğinde SQL'e eklenir; hepsi parametrelidir."""
+        if type(days) is not int or not 1 <= days <= 365 or type(offset) is not int or not 0 <= offset <= 1_000_000 \
+                or type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("Günlük sorgusu parametreleri geçersiz.")
+        if level is not None and level not in ("debug", "info", "warning", "error"):
+            raise ValueError("Düzey geçersiz.")
+        conditions, params = ["l.created_at >= DATEADD(day, -?, SYSUTCDATETIME())"], [days]
+        if level:
+            conditions.append("l.level = ?")
+            params.append(level)
+        if event_type:
+            conditions.append("l.event_type = ?")
+            params.append(_text(event_type, 100))
+        if query and query.strip() and _is_uuid(query.strip()):
+            conditions.append("l.correlation_id = ?")
+            params.append(str(UUID(query.strip())))
+        elif query and query.strip():
+            pattern = "%" + re.sub(r"([\\%_\[])", r"\\\1", query.strip()[:100]) + "%"
+            conditions.append("(l.event_type LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')")
+            params += [pattern, pattern]
+        where = " AND ".join(conditions)
+        rows = self._query(
+            "SELECT l.id, l.created_at, l.level, l.event_type, l.correlation_id, u.email AS user_email, "
+            "l.details_json FROM dbo.app_logs l LEFT JOIN dbo.users u ON u.id = l.user_id WHERE " + where +
+            " ORDER BY l.created_at DESC, l.id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY", *params, offset, limit + 1)
+        return {"items": rows[:limit], "next_offset": offset + limit if len(rows) > limit else None}
+
+    def log_summary(self, days: int = 7) -> dict:
+        if type(days) is not int or not 1 <= days <= 365:
+            raise ValueError("Gün sayısı 1-365 olmalı.")
+        levels = self._query("SELECT level, COUNT(*) AS n FROM dbo.app_logs "
+                             "WHERE created_at >= DATEADD(day, -?, SYSUTCDATETIME()) GROUP BY level", days)
+        events = self._query("SELECT TOP (30) event_type, COUNT(*) AS n FROM dbo.app_logs "
+                             "WHERE created_at >= DATEADD(day, -?, SYSUTCDATETIME()) "
+                             "GROUP BY event_type ORDER BY COUNT(*) DESC, event_type", days)
+        return {"levels": {row["level"]: int(row["n"]) for row in levels},
+                "events": [{"event_type": row["event_type"], "count": int(row["n"])} for row in events]}
 
     def admin_report(self, days: int = 30, top: int = 10) -> dict:
         """Aggregate usage and quality figures for the admin panel (read-only).

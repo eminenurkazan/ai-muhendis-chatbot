@@ -10,6 +10,7 @@ import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
+import app_log
 import kb_service as service
 import rag_provider
 from admin_api import require_admin
@@ -162,6 +163,8 @@ def upload(request: UploadRequest, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=422, detail=str(error)) from None
     except (DatabaseError, psycopg.Error):
         raise _unavailable() from None
+    app_log.log_event("info", "kb.upload_staged", user_id=str(admin["id"]), details={
+        "kind": request.kind, "filename": request.filename, "domain": request.domain, **counts})
     return {**result, **counts}
 
 
@@ -184,6 +187,9 @@ def approve(request: ApproveRequest, admin: dict = Depends(require_admin)):
             # Ham servis yanıtı veya bağlantı ayrıntısı sızdırma.
             logger.error("Kayıt indekslenemedi: %s", type(error).__name__)
             items.append({"id": record_id, "status": "failed", "message": "Embedding üretilemedi; tekrar deneyin."})
+    counts = {name: sum(1 for item in items if item["status"] == name) for name in ("indexed", "already", "failed")}
+    app_log.log_event("warning" if counts["failed"] else "info", "kb.approve", user_id=str(admin["id"]),
+                      details={"record_ids": [str(i) for i in dict.fromkeys(request.ids)], **counts})
     return {"items": items}
 
 
@@ -191,7 +197,10 @@ def approve(request: ApproveRequest, admin: dict = Depends(require_admin)):
 def set_status(record_id: UUID, request: StatusRequest, admin: dict = Depends(require_admin)):
     try:
         with connect() as connection:
-            return service.exclude_record(connection, str(record_id), request.excluded)
+            result = service.exclude_record(connection, str(record_id), request.excluded)
+        app_log.log_event("info", "kb.exclude" if request.excluded else "kb.restore", user_id=str(admin["id"]),
+                          details={"record_id": str(record_id), "status": result["status"]})
+        return result
     except service.KnowledgeError as error:
         raise HTTPException(status_code=404, detail=str(error)) from None
     except (DatabaseError, psycopg.Error):

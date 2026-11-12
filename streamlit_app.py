@@ -1,6 +1,7 @@
 """TRtek Akıllı Servis Masası: Streamlit kullanıcı arayüzü."""
 
 from html import escape
+import json
 import os
 from pathlib import Path
 import time
@@ -510,10 +511,12 @@ def render_admin() -> None:
             sign_out()
     st.markdown('<div class="eyebrow">TRTEK · YÖNETİM</div>', unsafe_allow_html=True)
     st.title("Yönetim paneli")
-    section = st.radio("Bölüm", ["Raporlar", "Bilgi Merkezi"], horizontal=True, key="admin_section",
+    section = st.radio("Bölüm", ["Raporlar", "Bilgi Merkezi", "Günlükler"], horizontal=True, key="admin_section",
                        label_visibility="collapsed")
     if section == "Bilgi Merkezi":
         render_knowledge_center()
+    elif section == "Günlükler":
+        render_logs()
     else:
         render_admin_report()
 
@@ -570,6 +573,72 @@ def render_admin_report() -> None:
             st.bar_chart({row["day"]: row["questions"] for row in report["daily"]})
 
 
+LEVEL_LABELS = {"error": "Hata", "warning": "Uyarı", "info": "Bilgi", "debug": "Ayıklama"}
+
+
+def _log_time(value: str) -> str:
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).strftime("%d.%m.%Y %H:%M:%S") + " UTC"
+    except ValueError:
+        return value
+
+
+def render_logs() -> None:
+    """Uygulama günlükleri (yalnız yönetici). Parola, token ve soru metni günlüğe yazılmaz."""
+    token = st.session_state.token
+    days = st.selectbox("Dönem", [1, 7, 30, 90], index=1, format_func=lambda d: f"Son {d} gün", key="log_days")
+    try:
+        summary = ui_client.log_summary(API_URL, token, days)
+    except ui_client.ApiError as error:
+        if error.status == 403:
+            st.session_state.view = "chat"
+        handle_api_error(error)
+        return
+    columns = st.columns(3)
+    for column, level in zip(columns, ("error", "warning", "info")):
+        column.metric(LEVEL_LABELS[level], summary["levels"].get(level, 0))
+    first = st.columns(3)
+    level_name = first[0].selectbox("Düzey", ["Hepsi", *LEVEL_LABELS.values()], key="log_level")
+    event_names = ["Hepsi", *[e["event_type"] for e in summary["events"]]]
+    event = first[1].selectbox("Olay", event_names, key="log_event")
+    query = first[2].text_input("Ara (olay, e-posta veya istek kimliği)", max_chars=100, key="log_query")
+    filters = {"days": days, "query": query.strip() or None,
+               "level": next((k for k, v in LEVEL_LABELS.items() if v == level_name), None),
+               "event_type": None if event == "Hepsi" else event}
+    if st.session_state.get("log_filters") != filters:
+        st.session_state.log_filters, st.session_state.log_offset = filters, 0
+    offset = st.session_state.get("log_offset", 0)
+    if st.button("Yenile", key="log_refresh"):
+        st.rerun()
+    try:
+        page = ui_client.logs(API_URL, token, offset=offset, **filters)
+    except ui_client.ApiError as error:
+        handle_api_error(error)
+        return
+    items = page["items"]
+    if not items:
+        st.info("Bu süzgeçle günlük kaydı yok.")
+    else:
+        st.dataframe([{"Zaman": _log_time(i["created_at"]), "Düzey": LEVEL_LABELS.get(i["level"], i["level"]),
+                       "Olay": i["event_type"], "Kullanıcı": i["user_email"] or "—",
+                       "İstek": i["correlation_id"][:8],
+                       "Ayrıntı": json.dumps(i["details"], ensure_ascii=False)[:120] if i["details"] else ""}
+                      for i in items], hide_index=True, use_container_width=True)
+        chosen = st.selectbox("Ayrıntı görüntüle", range(len(items)), key="log_pick",
+                              format_func=lambda n: f"{_log_time(items[n]['created_at'])} · {items[n]['event_type']}")
+        entry = items[chosen]
+        st.caption(f"İstek kimliği: {entry['correlation_id']} — aynı isteğin olaylarını görmek için bu kimliği Ara kutusuna yapıştır.")
+        st.json(entry["details"] if entry["details"] is not None else {})
+    nav = st.columns(2)
+    if nav[0].button("Önceki sayfa", disabled=offset == 0, key="log_prev"):
+        st.session_state.log_offset = max(0, offset - 50)
+        st.rerun()
+    if nav[1].button("Sonraki sayfa", disabled=page["next_offset"] is None, key="log_next"):
+        st.session_state.log_offset = page["next_offset"]
+        st.rerun()
+
+
 STATUS_LABELS = {"pending": "Onay bekliyor", "approved": "Aktif", "excluded": "Devre dışı"}
 DOMAIN_LABELS = {"general_it": "Genel BT", "windows_server": "Windows Server", "oracle_db": "Oracle DB"}
 TYPE_LABELS = {"ticket": "Ticket", "qa": "Soru–cevap", "documentation": "Rehber"}
@@ -610,7 +679,9 @@ def render_kb_upload() -> None:
         st.caption("Resmî rehber kaydı: `data_sources/official_guides` biçimi. Yalnız learn.microsoft.com ve "
                    "docs.oracle.com kaynakları kabul edilir. Oracle belgelerinin telifi Oracle'a aittir; metni "
                    "kopyalama, kısa ve kendi cümlelerinle yazılmış olgu özeti yükle.")
-    uploaded = st.file_uploader("Dosya", type=["csv" if is_csv else "json"], key=f"kb_file_{label}")
+    uploaded = st.file_uploader("Dosya", type=["csv" if is_csv else "json"], key=f"kb_file_{label}",
+                                max_upload_size=max(1, -(-KB_MAX_BYTES // 1_000_000)),
+                                help=f"En fazla {KB_MAX_BYTES / 1_000_000:g} MB ve {kb_limits.MAX_ROWS} satır.")
     payload = _kb_payload("tickets_csv" if is_csv else "guide_json", domain, license_note, uploaded)
     checked = st.session_state.get("kb_check")
     if st.button("Doğrula", disabled=payload is None, key="kb_validate"):
