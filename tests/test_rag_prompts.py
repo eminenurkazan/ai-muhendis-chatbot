@@ -1,6 +1,7 @@
 """Prompt seçimini bulut çağrısı yapmadan uçtan uca doğrular."""
 
 import json
+import asyncio
 import unittest
 from unittest.mock import patch
 
@@ -53,7 +54,7 @@ class RagPromptTests(unittest.TestCase):
         with (patch("rag_provider.embed_question", return_value=[0.1]),
               patch("rag_repository.search_matches", return_value=matches),
               patch("rag_provider.answer_from_matches", return_value=answer) as generate):
-            result = api.ask(api.AskRequest(question="soru", expertise_mode="windows_server"))
+            result = asyncio.run(api.ask(api.AskRequest(question="soru", expertise_mode="windows_server"), user={"id": "u"}))
         generate.assert_called_once_with("soru", matches, expertise_mode="windows_server")
         self.assertEqual(result.expertise_mode, "windows_server")
         self.assertEqual(result.prompt_version, PROMPT_VERSION)

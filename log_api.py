@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 import log_service
 from admin_api import require_admin
+from async_utils import run_blocking
 
 router = APIRouter(prefix="/admin/logs", tags=["Günlükler"])
 Level = Literal["debug", "info", "warning", "error"]
@@ -38,12 +39,13 @@ class LogSummary(BaseModel):
 
 
 @router.get("", response_model=LogPage)
-def get_logs(days: int = Query(default=7, ge=1, le=365), level: Level | None = None,
+async def get_logs(days: int = Query(default=7, ge=1, le=365), level: Level | None = None,
              event_type: str | None = Query(default=None, max_length=100), q: str | None = Query(default=None, max_length=100),
              offset: int = Query(default=0, ge=0, le=1_000_000), limit: int = Query(default=50, ge=1, le=100),
              admin: dict = Depends(require_admin)):
     try:
-        return log_service.list_logs(days=days, level=level, event_type=event_type, query=q, offset=offset, limit=limit)
+        return await run_blocking(log_service.list_logs, days=days, level=level, event_type=event_type, query=q,
+                                  offset=offset, limit=limit)
     except log_service.LogsUnavailable as error:
         raise HTTPException(status_code=503, detail=str(error)) from None
     except ValueError as error:
@@ -51,8 +53,8 @@ def get_logs(days: int = Query(default=7, ge=1, le=365), level: Level | None = N
 
 
 @router.get("/summary", response_model=LogSummary)
-def get_summary(days: int = Query(default=7, ge=1, le=365), admin: dict = Depends(require_admin)):
+async def get_summary(days: int = Query(default=7, ge=1, le=365), admin: dict = Depends(require_admin)):
     try:
-        return log_service.summary(days)
+        return await run_blocking(log_service.summary, days)
     except log_service.LogsUnavailable as error:
         raise HTTPException(status_code=503, detail=str(error)) from None

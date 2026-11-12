@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import app_log
+from async_utils import run_blocking
 from auth_api import require_user
 import chat_service as service
 from rag_prompts import ExpertiseMode
@@ -72,9 +73,9 @@ class MessagePage(BaseModel):
     next_after_seq: int | None
 
 
-def _call(function, *args, **kwargs):
+async def _call(function, *args, **kwargs):
     try:
-        return function(*args, **kwargs)
+        return await run_blocking(function, *args, **kwargs)
     except service.ChatNotFound as error:
         raise HTTPException(status_code=404, detail=str(error)) from None
     except service.ChatUnavailable as error:
@@ -82,31 +83,31 @@ def _call(function, *args, **kwargs):
 
 
 @router.post("", status_code=201, response_model=ChatInfo)
-def create_chat(request: CreateChat, user: dict = Depends(require_user)):
-    return _call(service.create_chat, str(user["id"]), request.title, request.expertise_mode)
+async def create_chat(request: CreateChat, user: dict = Depends(require_user)):
+    return await _call(service.create_chat, str(user["id"]), request.title, request.expertise_mode)
 
 
 @router.get("", response_model=ChatPage)
-def list_chats(offset: int = Query(default=0, ge=0, le=100000),
+async def list_chats(offset: int = Query(default=0, ge=0, le=100000),
                limit: int = Query(default=50, ge=1, le=100), user: dict = Depends(require_user)):
-    return _call(service.list_chats, str(user["id"]), offset, limit)
+    return await _call(service.list_chats, str(user["id"]), offset, limit)
 
 
 @router.get("/{chat_id}", response_model=ChatInfo)
-def get_chat(chat_id: UUID, user: dict = Depends(require_user)):
-    return _call(service.get_chat, str(user["id"]), str(chat_id))
+async def get_chat(chat_id: UUID, user: dict = Depends(require_user)):
+    return await _call(service.get_chat, str(user["id"]), str(chat_id))
 
 
 @router.get("/{chat_id}/messages", response_model=MessagePage)
-def list_messages(chat_id: UUID, after_seq: int = Query(default=0, ge=0, le=2147483647),
+async def list_messages(chat_id: UUID, after_seq: int = Query(default=0, ge=0, le=2147483647),
                   limit: int = Query(default=50, ge=1, le=100), user: dict = Depends(require_user)):
-    return _call(service.list_messages, str(user["id"]), str(chat_id), after_seq, limit)
+    return await _call(service.list_messages, str(user["id"]), str(chat_id), after_seq, limit)
 
 
 @router.put("/{chat_id}/requests/{request_id}/feedback", response_model=FeedbackInfo)
-def save_feedback(chat_id: UUID, request_id: UUID, request: FeedbackRequest,
+async def save_feedback(chat_id: UUID, request_id: UUID, request: FeedbackRequest,
                   user: dict = Depends(require_user)):
-    saved = _call(service.save_feedback, str(user["id"]), str(chat_id), str(request_id),
+    saved = await _call(service.save_feedback, str(user["id"]), str(chat_id), str(request_id),
                   request.rating, request.comment)
     # Yorum metni günlüğe yazılmaz.
     app_log.log_event("info", "chat.feedback_saved", user_id=str(user["id"]), details={

@@ -108,18 +108,18 @@ def _log_ask_failure(user, chat_id, status, error, started):
 
 
 @app.post("/chats/{chat_id}/ask", response_model=AskResponse)
-def ask_saved(chat_id: UUID, request: SavedAskRequest, user: dict = Depends(require_user)):
-    """History and expertise come from the authenticated user's saved chat."""
+async def ask_saved(chat_id: UUID, request: SavedAskRequest, user: dict = Depends(require_user)):
+    """History and expertise come from the authenticated user's saved chat. Async: no blocking call on the loop."""
     captured = {}
     started = time.perf_counter()
 
-    def generate(question, **options):
-        result = rag_service.ask_question(question, **options)
+    async def generate(question, **options):
+        result = await rag_service.ask_question_async(question, **options)
         captured["stage_ms"] = result.get("stage_ms")
         return AskResponse(**result).model_dump(mode="json")
     try:
-        response = chat_service.answer_chat(str(user["id"]), str(chat_id), request.question,
-                                            str(request.request_id), generate)
+        response = await chat_service.answer_chat_async(str(user["id"]), str(chat_id), request.question,
+                                                        str(request.request_id), generate)
     except chat_service.ChatNotFound as error:
         _log_ask_failure(user, chat_id, 404, error, started)
         raise HTTPException(status_code=404, detail=str(error)) from None
@@ -146,18 +146,19 @@ def ask_saved(chat_id: UUID, request: SavedAskRequest, user: dict = Depends(requ
 
 
 @app.post("/ask", response_model=AskResponse)
-def ask(request: AskRequest, user: dict = Depends(require_user)) -> AskResponse:
+async def ask(request: AskRequest, user: dict = Depends(require_user)) -> AskResponse:
     """İlk üç ilgili kaynağa dayalı yanıtı ve kullanılan kaynakların atıflarını döndürür."""
     try:
         options = {"expertise_mode": request.expertise_mode}
         if request.history:
             options["history"] = [message.model_dump() for message in request.history]
-        def produce():
-            return AskResponse(**rag_service.ask_question(request.question, **options))
+
+        async def produce():
+            return AskResponse(**await rag_service.ask_question_async(request.question, **options))
         if request.request_id is not None:
-            return replays.run(user["id"], request.request_id,
-                               request.model_dump(mode="json", exclude={"request_id"}), produce)
-        return produce()
+            return await replays.run_async(user["id"], request.request_id,
+                                           request.model_dump(mode="json", exclude={"request_id"}), produce)
+        return await produce()
     except ReplayConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
     except ReplayBusy as exc:
@@ -170,3 +171,9 @@ def ask(request: AskRequest, user: dict = Depends(require_user)) -> AskResponse:
         # Token, ham servis yanıtı veya veritabanı bağlantı dizesi sızdırma.
         logger.error("RAG isteği tamamlanamadı: %s", type(exc).__name__)
         raise HTTPException(status_code=502, detail="Yanıt üretilemedi; terminal çıktısını kontrol et.") from None
+
+
+@app.get("/health", tags=["Durum"])
+async def health():
+    """Veritabanına dokunmayan hafif canlılık kontrolü; olay döngüsünün yanıt verdiğini gösterir."""
+    return {"status": "ok"}

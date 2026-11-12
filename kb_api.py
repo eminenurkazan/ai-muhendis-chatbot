@@ -1,6 +1,7 @@
 """Bilgi Merkezi yönetim uçları; yalnızca yönetici rolü erişir."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 from typing import Literal
@@ -14,6 +15,7 @@ import app_log
 import kb_service as service
 import rag_provider
 from admin_api import require_admin
+from async_utils import run_blocking
 from database.connection import DatabaseError, connect
 
 router = APIRouter(prefix="/admin/kb", tags=["Bilgi Merkezi"])
@@ -105,43 +107,61 @@ def _unavailable() -> HTTPException:
     return HTTPException(status_code=503, detail="Bilgi tabanına şu anda ulaşılamıyor.")
 
 
+def _read(operation):
+    """Bağlantıyı açıp ``operation(connection)`` çalıştırır; eşzamanlı, iş parçacığında çağrılır."""
+    with connect() as connection:
+        return operation(connection)
+
+
 @router.get("/summary", response_model=Summary)
-def get_summary(admin: dict = Depends(require_admin)):
+async def get_summary(admin: dict = Depends(require_admin)):
     try:
-        with connect() as connection:
-            return service.summary(connection)
+        return await run_blocking(_read, service.summary)
     except (DatabaseError, psycopg.Error):
         raise _unavailable() from None
 
 
 @router.get("/records", response_model=RecordPage)
-def get_records(review_status: Literal["pending", "approved", "excluded"] | None = None,
-                domain: Domain | None = None,
-                record_type: Literal["ticket", "qa", "documentation"] | None = None,
-                q: str | None = Query(default=None, max_length=100),
-                offset: int = Query(default=0, ge=0, le=1_000_000),
-                limit: int = Query(default=50, ge=1, le=100), admin: dict = Depends(require_admin)):
+async def get_records(review_status: Literal["pending", "approved", "excluded"] | None = None,
+                      domain: Domain | None = None,
+                      record_type: Literal["ticket", "qa", "documentation"] | None = None,
+                      q: str | None = Query(default=None, max_length=100),
+                      offset: int = Query(default=0, ge=0, le=1_000_000),
+                      limit: int = Query(default=50, ge=1, le=100), admin: dict = Depends(require_admin)):
     try:
-        with connect() as connection:
-            return service.list_records(connection, review_status=review_status, domain=domain,
-                                        record_type=record_type, query=q, offset=offset, limit=limit)
+        return await run_blocking(_read, lambda connection: service.list_records(
+            connection, review_status=review_status, domain=domain, record_type=record_type, query=q,
+            offset=offset, limit=limit))
     except (DatabaseError, psycopg.Error):
         raise _unavailable() from None
     except service.KnowledgeError as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
 
 
+def _validate_upload(request: UploadRequest):
+    """CPU'ya bağlı doğrulama (en çok birkaç yüz satır); iş parçacığında çalışır."""
+    if request.kind == "tickets_csv":
+        if not request.license_note.strip():
+            raise service.KnowledgeError("Kaynak veya lisans notu zorunlu.")
+        return service.parse_tickets_csv(request.content, request.domain)
+    return service.parse_guides_json(request.content)
+
+
+def _stage(request: UploadRequest, records, digest):
+    def stage(connection):
+        if request.kind == "tickets_csv":
+            return service.stage_tickets(connection, records, domain=request.domain, filename=request.filename,
+                                         license_note=request.license_note.strip(), file_digest=digest)
+        return service.stage_guides(connection, records, filename=request.filename, file_digest=digest)
+    return _read(stage)
+
+
 @router.post("/upload", response_model=UploadResult)
-def upload(request: UploadRequest, admin: dict = Depends(require_admin)):
+async def upload(request: UploadRequest, admin: dict = Depends(require_admin)):
     """Dosyayı doğrular; ``dry_run=false`` ise kayıtları ``pending`` olarak ekler (embedding üretmez)."""
     digest = hashlib.sha256(request.content.encode("utf-8")).hexdigest()
     try:
-        if request.kind == "tickets_csv":
-            if not request.license_note.strip():
-                raise service.KnowledgeError("Kaynak veya lisans notu zorunlu.")
-            records, errors = service.parse_tickets_csv(request.content, request.domain)
-        else:
-            records, errors = service.parse_guides_json(request.content)
+        records, errors = await run_blocking(_validate_upload, request)
     except service.KnowledgeError as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     result = {"dry_run": request.dry_run, "kind": request.kind, "valid": len(records),
@@ -152,13 +172,7 @@ def upload(request: UploadRequest, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=422, detail="Dosyada hatalar var; düzeltip yeniden yükleyin.\n"
                             + "\n".join(errors[:10]))
     try:
-        with connect() as connection:
-            if request.kind == "tickets_csv":
-                counts = service.stage_tickets(connection, records, domain=request.domain,
-                                               filename=request.filename, license_note=request.license_note.strip(),
-                                               file_digest=digest)
-            else:
-                counts = service.stage_guides(connection, records, filename=request.filename, file_digest=digest)
+        counts = await run_blocking(_stage, request, records, digest)
     except service.KnowledgeError as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     except (DatabaseError, psycopg.Error):
@@ -168,36 +182,58 @@ def upload(request: UploadRequest, admin: dict = Depends(require_admin)):
     return {**result, **counts}
 
 
+class _DatabaseDown(Exception):
+    pass
+
+
+def _approve_one(record_id: UUID) -> dict:
+    """Tek kayıt, kendi bağlantı ve transaction'ında; iş parçacığında çalışır."""
+    try:
+        with connect() as connection:
+            outcome = service.approve_record(connection, str(record_id), rag_provider.embed_question)
+        return {"id": record_id, **outcome}
+    except (service.KnowledgeError, rag_provider.ServiceUnavailable) as error:
+        return {"id": record_id, "status": "failed", "message": str(error)}
+    except (DatabaseError, psycopg.Error):
+        raise _DatabaseDown from None
+    except Exception as error:
+        # Ham servis yanıtı veya bağlantı ayrıntısı sızdırma.
+        logger.error("Kayıt indekslenemedi: %s", type(error).__name__)
+        return {"id": record_id, "status": "failed", "message": "Embedding üretilemedi; tekrar deneyin."}
+
+
+APPROVE_CONCURRENCY = 3
+
+
 @router.post("/approve", response_model=ApproveResult)
-def approve(request: ApproveRequest, admin: dict = Depends(require_admin)):
-    """Her kayıt kendi transaction'ında embedding'lenir; biri başarısız olursa diğerleri etkilenmez."""
-    items = []
-    for record_id in dict.fromkeys(request.ids):
-        try:
-            with connect() as connection:
-                outcome = service.approve_record(connection, str(record_id), rag_provider.embed_question)
-            items.append({"id": record_id, **outcome})
-        except service.KnowledgeError as error:
-            items.append({"id": record_id, "status": "failed", "message": str(error)})
-        except rag_provider.ServiceUnavailable as error:
-            items.append({"id": record_id, "status": "failed", "message": str(error)})
-        except (DatabaseError, psycopg.Error):
-            raise _unavailable() from None
-        except Exception as error:
-            # Ham servis yanıtı veya bağlantı ayrıntısı sızdırma.
-            logger.error("Kayıt indekslenemedi: %s", type(error).__name__)
-            items.append({"id": record_id, "status": "failed", "message": "Embedding üretilemedi; tekrar deneyin."})
+async def approve(request: ApproveRequest, admin: dict = Depends(require_admin)):
+    """Kayıtlar en çok 3'erli paralel embedding'lenir (Cloudflare kotasını zorlamamak için); her kayıt kendi
+    transaction'ındadır, biri başarısız olursa diğerleri etkilenmez. Sonuç sırası istek sırasıdır."""
+    ids = list(dict.fromkeys(request.ids))
+    limit = asyncio.Semaphore(APPROVE_CONCURRENCY)
+
+    async def one(record_id):
+        async with limit:
+            return await run_blocking(_approve_one, record_id)
+
+    outcomes = await asyncio.gather(*(one(record_id) for record_id in ids), return_exceptions=True)
+    if any(isinstance(item, _DatabaseDown) for item in outcomes):
+        raise _unavailable()
+    for item in outcomes:
+        if isinstance(item, BaseException):
+            raise item
+    items = list(outcomes)
     counts = {name: sum(1 for item in items if item["status"] == name) for name in ("indexed", "already", "failed")}
     app_log.log_event("warning" if counts["failed"] else "info", "kb.approve", user_id=str(admin["id"]),
-                      details={"record_ids": [str(i) for i in dict.fromkeys(request.ids)], **counts})
+                      details={"record_ids": [str(i) for i in ids], **counts})
     return {"items": items}
 
 
 @router.post("/records/{record_id}/status")
-def set_status(record_id: UUID, request: StatusRequest, admin: dict = Depends(require_admin)):
+async def set_status(record_id: UUID, request: StatusRequest, admin: dict = Depends(require_admin)):
     try:
-        with connect() as connection:
-            result = service.exclude_record(connection, str(record_id), request.excluded)
+        result = await run_blocking(_read, lambda connection: service.exclude_record(
+            connection, str(record_id), request.excluded))
         app_log.log_event("info", "kb.exclude" if request.excluded else "kb.restore", user_id=str(admin["id"]),
                           details={"record_id": str(record_id), "status": result["status"]})
         return result

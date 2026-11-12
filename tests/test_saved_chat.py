@@ -103,7 +103,7 @@ class SavedTurnTests(unittest.TestCase):
         path = f"/chats/{self.chat}/ask"
         body = {"question": "Test", "request_id": self.request}
         self.assertEqual(client.post(path, json=body).status_code, 401)
-        with identity(self.owner), patch.object(service, "answer_chat", return_value=ANSWER) as turn:
+        with identity(self.owner), patch.object(service, "answer_chat_async", return_value=ANSWER) as turn:
             self.assertEqual(client.post(path, json={**body, "history": []}).status_code, 422)
             self.assertEqual(client.post(path, json={**body, "expertise_mode": "windows_server"}).status_code, 422)
             self.assertEqual(client.post(path, json={"question": "Test"}).status_code, 422)

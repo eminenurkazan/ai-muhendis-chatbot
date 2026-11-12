@@ -116,8 +116,10 @@ class EventPointTests(unittest.TestCase):
                   "retrieved_ticket_ids": ["1"], "elapsed_ms": 1234, "expertise_mode": "oracle_db",
                   "prompt_version": "v", "used_source_ids": ["1"], "retrieved_source_ids": ["1"], "sources": [],
                   "stage_ms": {"embed": 200, "retrieve": 30, "llm": 1000}}
-        with patch("rag_service.ask_question", return_value=result), patch("app_log.log_event") as log, \
-             patch("chat_service.answer_chat", side_effect=lambda u, c, q, r, generate: generate(q)):
+        async def fake_turn(user_id, chat_id, question, request_id, generate):
+            return await generate(question)
+        with patch("rag_service.ask_question_async", return_value=result), patch("app_log.log_event") as log, \
+             patch("chat_service.answer_chat_async", side_effect=fake_turn):
             response = self.client.post(f"/chats/{self.chat}/ask", json={"question": "SECRET-QUESTION", "request_id": self.request})
         self.assertEqual(response.status_code, 200)
         self.assertIn("X-Request-ID", response.headers)
@@ -133,7 +135,7 @@ class EventPointTests(unittest.TestCase):
                                      (chat_service.ChatUnavailable("x"), 503, "error"),
                                      (RuntimeError("sk-secret-token"), 502, "error")):
             with self.subTest(status=status), patch("app_log.log_event") as log, \
-                 patch("chat_service.answer_chat", side_effect=error):
+                 patch("chat_service.answer_chat_async", side_effect=error):
                 response = self.client.post(f"/chats/{self.chat}/ask", json={"question": "q", "request_id": str(uuid4())})
             self.assertEqual(response.status_code, status)
             failed = [call for call in log.call_args_list if call.args[1] == "chat.ask_failed"]

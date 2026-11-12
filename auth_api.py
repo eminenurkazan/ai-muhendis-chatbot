@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 import app_log
 import auth_service as service
+from async_utils import run_blocking
 from registration_api import RegistrationRoute
 
 router = APIRouter(prefix="/auth", tags=["Kullanıcı"], route_class=RegistrationRoute)
@@ -39,11 +40,11 @@ def _unauthorized(message: str) -> HTTPException:
     return HTTPException(status_code=401, detail=message, headers={"WWW-Authenticate": "Bearer"})
 
 
-def require_user(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
+async def require_user(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
     if credentials is None:
         raise _unauthorized("Bu işlem için giriş yapmalısın.")
     try:
-        return service.current_user(credentials.credentials)
+        return await run_blocking(service.current_user, credentials.credentials)
     except service.AuthenticationError as exc:
         raise _unauthorized(str(exc)) from None
     except service.AuthenticationUnavailable as exc:
@@ -51,11 +52,11 @@ def require_user(credentials: HTTPAuthorizationCredentials | None = Depends(bear
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(request: LoginRequest, http_request: Request):
+async def login(request: LoginRequest, http_request: Request):
     # E-posta ve parola günlüğe yazılmaz; yalnız istemci adresi ve sonuç kaydedilir.
     client_ip = http_request.client.host if http_request.client else None
     try:
-        result = service.login(request.email, request.password.get_secret_value())
+        result = await run_blocking(service.login, request.email, request.password.get_secret_value())
     except service.AuthenticationError as exc:
         app_log.log_event("warning", "auth.login_failed", details={"client_ip": client_ip})
         raise _unauthorized(str(exc)) from None
@@ -68,5 +69,5 @@ def login(request: LoginRequest, http_request: Request):
 
 
 @router.get("/me", response_model=UserInfo)
-def me(user: dict = Depends(require_user)):
+async def me(user: dict = Depends(require_user)):
     return user

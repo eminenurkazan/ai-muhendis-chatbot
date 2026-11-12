@@ -166,7 +166,7 @@ class ReplayTests(unittest.TestCase):
         old = api.app.dependency_overrides.copy()
         api.app.dependency_overrides[api.require_user] = lambda: {"id": "user-1"}
         try:
-            with patch.object(api, "replays", ReplayStore()), patch("rag_service.ask_question", return_value=response) as rag:
+            with patch.object(api, "replays", ReplayStore()), patch("rag_service.ask_question_async", return_value=response) as rag:
                 client = TestClient(api.app)
                 first = client.post("/ask", json=body)
                 second = client.post("/ask", json=body)

@@ -475,3 +475,18 @@ ALTER DATABASE ServisMasasiApp SET AUTO_CLOSE OFF;
 ```
 
 Yeni kurulumda bu ayar ayrıca kontrol edilmelidir (`SELECT name, is_auto_close_on FROM sys.databases`). Uygulama tarafında MSSQL giriş süresi 15 saniyeye çıkarıldı ve zaman aşımında bir kez yeniden denenir (`MSSQL_LOGIN_TIMEOUT`, 1–60). Bellek baskısı sürerse `min server memory` ayarı değerlendirilebilir; bu ayar değiştirilmedi.
+
+
+### Asenkron mimari (12 Kasım 2026)
+
+Bütün HTTP uçları ve kimlik dependency'leri `async def`'tir (`/health` canlılık ucu dahil). Kurallar [async_utils.py](async_utils.py) içindedir:
+
+- **Olay döngüsü bloklanmaz.** Eşzamanlı olan işler (pyodbc/MSSQL sürücüsü, parola özeti, kayıtlı model oturumu kodu) `run_blocking` ile sınırlı bir iş parçacığı havuzunda çalışır (varsayılan 32, `BLOCKING_THREADS`). Bu sürücüler `await` edilemediği için bu, Python'daki doğru kalıptır; korelasyon kimliği ve aşama süreleri iş parçacığına taşınır.
+- **Soru hattı aşama aşama `await` edilir** (`rag_service.ask_question_async`): embedding → arama → model. Her aşamanın zaman aşımı vardır (`RAG_EMBED_TIMEOUT` 45, `RAG_RETRIEVE_TIMEOUT` 30, `RAG_LLM_TIMEOUT` 140 sn); aşılırsa hangi aşamanın aşıldığını söyleyen `503` döner. Aşama mantığı `rag_chain` adımlarıyla ortaktır (kopya yok).
+- **Model çağrıları bir eşzamanlılık kapısından geçer** (`RAG_MAX_CONCURRENT_LLM`, varsayılan 4). Sıra bekleyen istekler olay döngüsünü tutmaz; `RAG_QUEUE_WAIT_SECONDS` (30) içinde yer açılmazsa "yoğun" mesajıyla `503` döner.
+- **Sohbet kaydı:** SQL bağlantısı model üretimi sırasında açık tutulmaz (`answer_chat_async`). Tekrar koruması (`ReplayStore.run_async`) hata veya iptal olursa kaydı temizler; istek takılı kalmaz.
+- **Bilgi Merkezi onayı** kayıtları en çok 3'erli paralel embedding'ler (Cloudflare kotasını zorlamamak için); sonuç sırası istek sırasıdır.
+- **İptal:** İstemci koparsa görev iptal edilir (`CancelledError` yutulmaz). Zaman aşımında veya iptalde çalışan iş parçacığı kendiliğinden durdurulamaz; sonucu atılır ve havuz sınırı bu işlerin sayısını sınırlar.
+- **Sınır:** Streamlit arayüzü eşzamanlı `httpx` istemcisi kullanır (Streamlit kendi betik modeliyle eşzamanlı çalışır); sunucu tarafı asenkrondur.
+
+`tests/test_async.py` döngünün bloklanmadığını (gecikme ölçümü), eşzamanlılığı (seri olsaydı geçecek süreyle karşılaştırma), iş parçacığı sınırını, zaman aşımını, kapıyı, iptal sonrası temizliği ve tüm uçların `async def` olduğunu sınar.

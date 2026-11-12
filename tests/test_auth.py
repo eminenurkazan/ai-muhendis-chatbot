@@ -76,7 +76,7 @@ class AuthTests(unittest.TestCase):
             self.assertNotIn(PASSWORD, response.text)
 
     def test_unauthed_ask_rejected_before_rag_call(self):
-        with patch("rag_service.ask_question") as ask:
+        with patch("rag_service.ask_question_async") as ask:
             for headers in ({}, {"Authorization": "Basic abc"}, {"Authorization": "Bearer broken"}):
                 response = self.client.post("/ask", json={"question": "Test"}, headers=headers)
                 self.assertEqual(response.status_code, 401)
@@ -160,7 +160,7 @@ class AuthDatabaseTests(unittest.TestCase):
             answer = {"answer": "Test", "used_ticket_ids": [], "insufficient_context": True,
                       "retrieved_ticket_ids": [], "elapsed_ms": 0, "expertise_mode": "service_desk",
                       "prompt_version": "test", "used_source_ids": [], "retrieved_source_ids": [], "sources": []}
-            with patch("rag_service.ask_question", return_value=answer) as ask:
+            with patch("rag_service.ask_question_async", return_value=answer) as ask:
                 self.assertEqual(client.post("/ask", json={"question": "Test"}, headers=headers).status_code, 200)
                 ask.assert_called_once()
             connection.cursor().execute("UPDATE dbo.users SET is_active=0 WHERE id=?", registered.json()["id"])

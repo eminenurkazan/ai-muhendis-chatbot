@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 import app_log
 import registration_service as service
+from async_utils import run_blocking
 
 
 class RegistrationRoute(APIRoute):
@@ -67,9 +68,9 @@ class RegisteredUser(BaseModel):
 
 
 @router.post("/register", status_code=201, response_model=RegisteredUser)
-def register(request: RegisterRequest):
+async def register(request: RegisterRequest):
     try:
-        user = service.register_user(request.email, request.password.get_secret_value())
+        user = await run_blocking(service.register_user, request.email, request.password.get_secret_value())
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
     except service.RegistrationConflict as exc:

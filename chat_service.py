@@ -106,28 +106,30 @@ def _saved_response(state, question):
         raise ChatUnavailable("Kaydedilen yanıt okunamadı.") from None
 
 
-def answer_chat(user_id, chat_id, question, request_id, generate):
-    """Read context, release SQL, generate, then atomically save one complete turn."""
+def _clean_question(question):
     question = question.strip()
     if not question or len(question) > 2000:
         raise ValueError("Soru boş olamaz ve 2000 karakteri geçemez.")
-    state = _run(lambda repo: repo.turn_state(user_id, chat_id, request_id))
-    saved = _saved_response(state, question)
-    if saved is not None:
-        return saved
+    return question
+
+
+def _context(state):
+    """Kayıtlı sohbetten uzmanlık modu ve sınırlı geçmiş; istemciden gelmez."""
     mode = state["session"]["expertise_mode"]
     history = history_from_messages([
         {"role": row["role"], "content": row["content"],
          "status": "complete" if row["message_status"] == "completed" else "failed"}
         for row in state["recent"]
     ])
-    # The sequence is part of the cache key: concurrent changes need fresh context.
-    response = _generated_turns.run(
-        (str(user_id), str(chat_id), state["last_seq"]), request_id,
-        {"question": question, "mode": mode},
-        lambda: generate(question, expertise_mode=mode, history=history),
-    )
+    return mode, history
 
+
+def _replay_key(user_id, chat_id, state):
+    # The sequence is part of the cache key: concurrent changes need fresh context.
+    return (str(user_id), str(chat_id), state["last_seq"])
+
+
+def _saver(user_id, chat_id, request_id, question, response, state):
     def save(repo):
         current = repo.turn_state(user_id, chat_id, request_id, lock=True)
         previous = _saved_response(current, question)
@@ -137,4 +139,39 @@ def answer_chat(user_id, chat_id, question, request_id, generate):
             raise ReplayConflict("Bu sohbet başka bir istekle güncellendi. Sohbeti yeniden açıp sorunu tekrar gönder.")
         repo.save_turn(user_id, chat_id, request_id, question, response)
         return response
-    return _run(save, write=True)
+    return save
+
+
+def answer_chat(user_id, chat_id, question, request_id, generate):
+    """Read context, release SQL, generate, then atomically save one complete turn."""
+    question = _clean_question(question)
+    state = _run(lambda repo: repo.turn_state(user_id, chat_id, request_id))
+    saved = _saved_response(state, question)
+    if saved is not None:
+        return saved
+    mode, history = _context(state)
+    response = _generated_turns.run(
+        _replay_key(user_id, chat_id, state), request_id, {"question": question, "mode": mode},
+        lambda: generate(question, expertise_mode=mode, history=history),
+    )
+    return _run(_saver(user_id, chat_id, request_id, question, response, state), write=True)
+
+
+async def answer_chat_async(user_id, chat_id, question, request_id, generate):
+    """``answer_chat`` ile aynı kurallar; SQL adımları iş parçacığında, model üretimi ``await`` ile.
+
+    ``generate`` bir coroutine işlevidir (``generate(question, expertise_mode=..., history=...)``).
+    SQL bağlantısı model çağrısı sırasında açık tutulmaz.
+    """
+    from async_utils import run_blocking
+    question = _clean_question(question)
+    state = await run_blocking(_run, lambda repo: repo.turn_state(user_id, chat_id, request_id))
+    saved = _saved_response(state, question)
+    if saved is not None:
+        return saved
+    mode, history = _context(state)
+    response = await _generated_turns.run_async(
+        _replay_key(user_id, chat_id, state), request_id, {"question": question, "mode": mode},
+        lambda: generate(question, expertise_mode=mode, history=history),
+    )
+    return await run_blocking(_run, _saver(user_id, chat_id, request_id, question, response, state), write=True)

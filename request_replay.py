@@ -20,7 +20,8 @@ class ReplayStore:
         self.entries = {}
         self.lock = Lock()
 
-    def run(self, owner, request_id, payload, operation):
+    def _begin(self, owner, request_id, payload):
+        """Kritik bölüm kısadır ve ``await`` içermez: kilit olay döngüsünde de güvenle alınır."""
         key = (str(owner), str(request_id))
         fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         with self.lock:
@@ -34,19 +35,44 @@ class ReplayStore:
                     raise ReplayConflict("Aynı istek kimliği farklı bir soru için kullanılamaz.")
                 if not entry["done"]:
                     raise ReplayConflict("Önceki istek hâlâ işleniyor. Biraz bekleyip tekrar deneyebilirsin.")
-                return deepcopy(entry["result"])
+                return key, None, deepcopy(entry["result"])
             if len(self.entries) >= self.capacity:
                 raise ReplayBusy("Yanıt hizmeti yoğun. Biraz bekleyip tekrar deneyebilirsin.")
             entry = {"fingerprint": fingerprint, "done": False}
             self.entries[key] = entry
+        return key, entry, None
+
+    def _fail(self, key):
+        with self.lock:
+            self.entries.pop(key, None)
+
+    def _finish(self, entry, result):
+        with self.lock:
+            entry.update(done=True, result=deepcopy(result), finished=time.monotonic())
+
+    def run(self, owner, request_id, payload, operation):
+        key, entry, cached = self._begin(owner, request_id, payload)
+        if entry is None:
+            return cached
         try:
             result = operation()
         except BaseException:
-            with self.lock:
-                self.entries.pop(key, None)
+            self._fail(key)
             raise
-        with self.lock:
-            entry.update(done=True, result=deepcopy(result), finished=time.monotonic())
+        self._finish(entry, result)
+        return result
+
+    async def run_async(self, owner, request_id, payload, operation):
+        """``operation`` bir coroutine işlevidir. İptal veya hata durumunda kayıt temizlenir (tekrar denenebilir)."""
+        key, entry, cached = self._begin(owner, request_id, payload)
+        if entry is None:
+            return cached
+        try:
+            result = await operation()
+        except BaseException:  # CancelledError dahil: yarım kalan iş "devam ediyor" diye takılı kalmasın
+            self._fail(key)
+            raise
+        self._finish(entry, result)
         return result
 
 
