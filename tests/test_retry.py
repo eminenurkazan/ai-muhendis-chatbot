@@ -30,12 +30,21 @@ def retry_button(app):
 
 
 class RetryUiTests(unittest.TestCase):
+
+    def setUp(self):
+        from uuid import uuid4
+        for name, value in (("list_chats", {"items": [], "next_offset": None}),
+                            ("create_chat", {"id": str(uuid4())})):
+            active = patch("ui_client." + name, return_value=value)
+            active.start()
+            self.addCleanup(active.stop)
+
     def test_transient_failures_retry_same_request_and_history_without_duplicate_messages(self):
         for status in (None, 502, 503):
             with self.subTest(status=status):
                 app = app_for_test()
                 with patch("ui_client.current_user", return_value={"email": "test@example.com"}), patch(
-                    "ui_client.ask", side_effect=[ANSWER, ui_client.ApiError(status, "Test hatası"), ANSWER]
+                    "ui_client.ask_saved", side_effect=[ANSWER, ui_client.ApiError(status, "Test hatası"), ANSWER]
                 ) as ask:
                     app.run(timeout=20)
                     app.chat_input[0].set_value("Chrome açmıyor").run(timeout=20)
@@ -57,7 +66,7 @@ class RetryUiTests(unittest.TestCase):
 
     def test_pending_request_is_isolated_and_new_conversation_discards_it(self):
         app = app_for_test()
-        with patch("ui_client.current_user", return_value={"email": "test@example.com"}), patch("ui_client.ask", side_effect=ui_client.ApiError(503, "Test")) as ask:
+        with patch("ui_client.current_user", return_value={"email": "test@example.com"}), patch("ui_client.ask_saved", side_effect=ui_client.ApiError(503, "Test")) as ask:
             app.run(timeout=20)
             app.chat_input[0].set_value("Test sorusu").run(timeout=20)
             pending = app.session_state.pending_requests["service_desk"]
@@ -80,7 +89,7 @@ class RetryUiTests(unittest.TestCase):
     def test_auth_failure_clears_user_state_and_validation_failure_has_no_retry(self):
         for status in (401, 422):
             app = app_for_test()
-            with patch("ui_client.current_user", return_value={"email": "test@example.com"}), patch("ui_client.ask", side_effect=ui_client.ApiError(status, "Test")):
+            with patch("ui_client.current_user", return_value={"email": "test@example.com"}), patch("ui_client.ask_saved", side_effect=ui_client.ApiError(status, "Test")):
                 app.run(timeout=20)
                 app.chat_input[0].set_value("Test sorusu").run(timeout=20)
                 self.assertFalse(app.exception)
@@ -93,7 +102,7 @@ class RetryUiTests(unittest.TestCase):
 
     def test_api_offline_keeps_cached_session_and_retry_controls(self):
         app = app_for_test()
-        with patch("ui_client.current_user", side_effect=ui_client.ApiError(None, "Offline")), patch("ui_client.ask", side_effect=ui_client.ApiError(None, "Offline")) as ask:
+        with patch("ui_client.current_user", side_effect=ui_client.ApiError(None, "Offline")), patch("ui_client.ask_saved", side_effect=ui_client.ApiError(None, "Offline")) as ask:
             app.run(timeout=20)
             app.chat_input[0].set_value("Test sorusu").run(timeout=20)
             self.assertTrue(retry_button(app))

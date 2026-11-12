@@ -19,7 +19,7 @@ Repository bağlantıyı kapatmaz ve commit yapmaz. Çağıran servis, tüm işl
 
 `create_user` hazır bir `password_hash` bekler; parola hash'leme veya giriş doğrulama işlemi yapmaz. Dönen kullanıcı bilgisinde hash bulunmaz. E-posta normalizasyonu ve sorgusu açıkça `Latin1_General_100_CI_AS_SC` karşılaştırma kuralını kullanır; Türkçe veritabanı ayarındaki `I/ı` dönüşümü e-posta aramasına taşınmaz. Bu adımda kimlik doğrulama uygulanmadı: `user_id` ileride doğrulanmış oturumdan alınmalıdır; istemcinin gönderdiği kimliğe güvenilmemelidir. Uzmanlık modu alanına kayıt yazılması, Windows/Oracle prompt'larının uygulandığı anlamına gelmez.
 
-Mevcut `/ask` endpoint'i henüz bu katmanı çağırmaz. Geri bildirim ve log tabloları hazırdır; bu iki tablonun yazma yöntemleri sonraki uygulama adımlarında eklenecektir.
+Kalıcı sohbet ekranı `/chats/{chat_id}/ask` üzerinden bu katmanı kullanır; bağımsız `/ask` kayıt yapmaz. Mevcut veritabanına `python -m mssql.upgrade_chat_persistence` ile nullable yanıt görüntüsü alanı eklenir; başlangıç şeması yeniden çalıştırılmaz. Geri bildirim yazımı ve sahiplik kontrolü uygulamaya bağlandı; aynı yanıtın puanı mevcut kayıt üzerinde güncellenir. Log tablosunun yazma yöntemleri sonraki uygulama adımında eklenecektir.
 
 ## Yerel kontrol
 

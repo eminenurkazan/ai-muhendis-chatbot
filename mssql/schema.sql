@@ -59,6 +59,7 @@ CREATE TABLE dbo.chat_messages (
     citations_json nvarchar(max) NULL,
     source_snapshot_json nvarchar(max) NULL,
     model_name nvarchar(100) NULL,
+    response_json nvarchar(max) NULL,
     input_tokens int NULL,
     output_tokens int NULL,
     latency_ms int NULL,
@@ -71,6 +72,7 @@ CREATE TABLE dbo.chat_messages (
     CONSTRAINT CK_chat_messages_content CHECK (LEN(content) > 0),
     CONSTRAINT CK_chat_messages_citations CHECK (citations_json IS NULL OR ISJSON(citations_json) = 1),
     CONSTRAINT CK_chat_messages_snapshot CHECK (source_snapshot_json IS NULL OR ISJSON(source_snapshot_json) = 1),
+    CONSTRAINT CK_chat_messages_response CHECK (response_json IS NULL OR ISJSON(response_json) = 1),
     CONSTRAINT CK_chat_messages_input_tokens CHECK (input_tokens IS NULL OR input_tokens >= 0),
     CONSTRAINT CK_chat_messages_output_tokens CHECK (output_tokens IS NULL OR output_tokens >= 0),
     CONSTRAINT CK_chat_messages_latency CHECK (latency_ms IS NULL OR latency_ms >= 0)

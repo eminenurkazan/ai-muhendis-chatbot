@@ -37,6 +37,24 @@ h1, h2, h3 { font-family: 'Manrope', sans-serif !important; letter-spacing: -.03
 .stButton > button:hover, .stFormSubmitButton > button:hover { border-color:#8ce8d4; background:#82e2ce; color:#09201d; }
 .stTextInput input, .stTextArea textarea { background:#101a20; border-color:#344650; border-radius:9px; }
 .stTextInput input:focus, .stTextArea textarea:focus { border-color:#62d4ba; box-shadow:0 0 0 1px #62d4ba; }
+/* Compact saved conversation buttons */
+[data-testid="stSidebar"] [class*="st-key-saved_chat_"] button {
+  display:flex; justify-content:flex-start; width:100%; min-width:0;
+  height:2.4rem; min-height:2.4rem; padding:.35rem .65rem;
+  background:transparent; border:1px solid transparent; border-radius:8px;
+  color:#d7e2e7; font-weight:400; text-align:left; overflow:hidden;
+}
+[data-testid="stSidebar"] [class*="st-key-saved_chat_"] button:hover {
+  background:#1c2b33; border-color:transparent; color:#edf5f6;
+}
+[data-testid="stSidebar"] [class*="st-key-saved_chat_"] button > div,
+[data-testid="stSidebar"] [class*="st-key-saved_chat_"] [data-testid="stMarkdownContainer"] {
+  min-width:0; width:100%; overflow:hidden;
+}
+[data-testid="stSidebar"] [class*="st-key-saved_chat_"] button p {
+  display:block; margin:0; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; text-align:left; font-size:.9rem; line-height:1.5;
+}
 div[data-testid="stChatMessage"] { border:1px solid #263740; border-radius:14px; background:rgba(19,29,36,.72); padding:.7rem 1rem; }
 .auth-intro { max-width: 500px; padding: 2.5rem .5rem; }
 .auth-heading { font-family:'Manrope',sans-serif; font-size:clamp(2.4rem,4.2vw,4.3rem); font-weight:800; line-height:1.06; letter-spacing:-.06em; }
@@ -240,6 +258,60 @@ def render_sources(sources: object) -> None:
                 st.markdown(f"[Kaynağı aç]({address})")
 
 
+@st.dialog("Yanıtı değerlendir")
+def feedback_dialog(message: dict) -> None:
+    st.write("Bu yanıt sana ne kadar yardımcı oldu?")
+    st.caption("1: Hiç yardımcı olmadı · 5: Çok yardımcı oldu")
+    request_id = message["request_id"]
+    current_rating = message.get("feedback_rating")
+    with st.form(f"feedback_form_{request_id}"):
+        rating = st.radio("Puanın", [1, 2, 3, 4, 5],
+                          index=current_rating - 1 if current_rating else None, horizontal=True,
+                          key=f"feedback_rating_{request_id}")
+        comment = st.text_area("Yorumun (isteğe bağlı)", value=message.get("feedback_comment") or "",
+                               max_chars=2000, key=f"feedback_comment_{request_id}")
+        submitted = st.form_submit_button("Değerlendirmeyi kaydet", use_container_width=True)
+    if submitted:
+        if rating is None:
+            st.warning("Lütfen 1 ile 5 arasında bir puan seç.")
+            return
+        try:
+            result = ui_client.save_feedback(API_URL, st.session_state.token, message["chat_id"],
+                                              request_id, rating, comment)
+        except ui_client.ApiError as error:
+            if error.status == 401:
+                handle_api_error(error)
+            else:
+                st.error("Değerlendirme kaydedilemedi. Puanın ve yorumun burada korunuyor; tekrar deneyebilirsin.")
+            return
+        message["feedback_rating"] = result["rating"]
+        message["feedback_comment"] = result.get("comment")
+        st.session_state.feedback_notice = "Değerlendirmen kaydedildi, teşekkürler."
+        st.rerun()
+
+
+def render_feedback_prompt(message: dict) -> None:
+    if not message.get("chat_id") or not message.get("request_id"):
+        return
+    request_id = message["request_id"]
+    if message.get("feedback_rating"):
+        st.caption(f"Değerlendirmen · {message['feedback_rating']}/5")
+        if st.button("Değerlendirmeyi düzenle", key=f"feedback_edit_{request_id}"):
+            feedback_dialog(message)
+        return
+    if message.get("feedback_dismissed"):
+        return
+    # A UI invitation only: never append it to saved messages or model context.
+    with st.chat_message("assistant"):
+        st.write("Bu yanıtı değerlendirmek ister misiniz?")
+        yes, no = st.columns(2)
+        if yes.button("Değerlendir", key=f"feedback_yes_{request_id}", use_container_width=True):
+            feedback_dialog(message)
+        if no.button("Şimdi değil", key=f"feedback_no_{request_id}", use_container_width=True):
+            message["feedback_dismissed"] = True
+            st.rerun()
+
+
 def send_chat_request(request: dict) -> None:
     """Send a new question or its retry without appending the user message twice."""
     if request.get("running"):
@@ -248,15 +320,20 @@ def send_chat_request(request: dict) -> None:
     request["error"] = None
     request["message"]["status"] = "pending"
     try:
-        result = ui_client.ask(
-            API_URL, st.session_state.token, request["question"], request["mode"],
-            history=request["history"], request_id=request["id"],
-        )
+        if not request.get("chat_id"):
+            chat = ui_client.create_chat(API_URL, st.session_state.token,
+                                         request["question"], request["mode"])
+            request["chat_id"] = chat["id"]
+            st.session_state.setdefault("mode_chat_ids", {})[request["mode"]] = chat["id"]
+        result = ui_client.ask_saved(API_URL, st.session_state.token, request["chat_id"],
+                                     request["question"], request["id"])
+        st.session_state.pop("saved_chats", None)
         messages = st.session_state.get("mode_messages", {}).get(request["mode"])
         if messages is not request["messages"]:
             return  # A reset or logout discarded this conversation while waiting.
         request["message"]["status"] = "complete"
         messages.append({"role": "assistant", "content": result.get("answer") or "Bu istek için yanıt alınamadı.",
+                         "chat_id": request["chat_id"], "request_id": request["id"],
                          "sources": result.get("sources", []),
                          "insufficient_context": result.get("insufficient_context", False),
                          "elapsed_ms": result.get("elapsed_ms")})
@@ -275,6 +352,25 @@ def send_chat_request(request: dict) -> None:
 
 def render_chat() -> None:
     user = st.session_state.user
+    # Apply navigation before the expertise selectbox is instantiated.
+    if selected_chat := st.session_state.pop("open_saved_chat", None):
+        try:
+            rows = ui_client.load_messages(API_URL, st.session_state.token, selected_chat["id"])
+            mode = selected_chat["expertise_mode"]
+            messages = [{"role": row["role"], "content": row["content"],
+                         "chat_id": selected_chat["id"], "request_id": row.get("request_id"),
+                         "feedback_rating": row.get("feedback_rating"),
+                         "feedback_comment": row.get("feedback_comment"),
+                         "status": "complete" if row["message_status"] == "completed" else "failed",
+                         "sources": row.get("sources", [])} for row in rows]
+            st.session_state.setdefault("mode_messages", {})[mode] = messages
+            st.session_state.setdefault("mode_chat_ids", {})[mode] = selected_chat["id"]
+            st.session_state.get("pending_requests", {}).pop(mode, None)
+            st.session_state.messages = messages
+            st.session_state.expertise = mode
+            st.session_state.expertise_selector = next(name for name, value in MODES.items() if value == mode)
+        except ui_client.ApiError as error:
+            handle_api_error(error)
     with st.sidebar:
         st.markdown('<div class="brand"><span class="brand-mark">T</span>TRtek</div>', unsafe_allow_html=True)
         st.markdown("<br><div class='tiny-label'>Uzmanlık alanı</div>", unsafe_allow_html=True)
@@ -289,16 +385,48 @@ def render_chat() -> None:
         mode_messages[previous_mode] = st.session_state.messages
         st.session_state.expertise = selected_mode
         st.session_state.messages = mode_messages.setdefault(selected_mode, [])
-        st.caption("Her uzmanlık alanının sohbeti bu oturumda ayrı tutulur.")
+        st.caption("Her uzmanlık alanında ayrı bir sohbet sürdürebilirsin.")
         if st.button("Yeni sohbet", use_container_width=True):
             st.session_state.get("pending_requests", {}).pop(selected_mode, None)
             st.session_state.messages = []
             mode_messages[selected_mode] = st.session_state.messages
+            st.session_state.setdefault("mode_chat_ids", {}).pop(selected_mode, None)
             st.rerun()
+        st.divider()
+        st.markdown("**Kayıtlı sohbetler**")
+        if st.button("Sohbet listesini yenile", use_container_width=True):
+            st.session_state.pop("saved_chats", None)
+        if "saved_chats" not in st.session_state:
+            try:
+                page = ui_client.list_chats(API_URL, st.session_state.token)
+                st.session_state.saved_chats = page["items"]
+                st.session_state.chats_next_offset = page.get("next_offset")
+            except ui_client.ApiError as error:
+                if error.status == 401:
+                    handle_api_error(error)
+                st.caption("Kayıtlı sohbetler şu anda yüklenemedi. Listeyi yenileyebilirsin.")
+        for chat in st.session_state.get("saved_chats", []):
+            label = " ".join((chat.get("title") or "Yeni sohbet").split())
+            mode_name = next((name for name, mode in MODES.items() if mode == chat["expertise_mode"]), "")
+            if st.button(label, key=f"saved_chat_{chat['id']}", help=f"{label} · {mode_name}",
+                         use_container_width=True):
+                st.session_state.open_saved_chat = chat
+                st.rerun()
+        if st.session_state.get("chats_next_offset") is not None:
+            if st.button("Daha eski sohbetler", use_container_width=True):
+                try:
+                    page = ui_client.list_chats(API_URL, st.session_state.token,
+                                                st.session_state.chats_next_offset)
+                    known = {chat["id"] for chat in st.session_state.saved_chats}
+                    st.session_state.saved_chats.extend(chat for chat in page["items"] if chat["id"] not in known)
+                    st.session_state.chats_next_offset = page.get("next_offset")
+                    st.rerun()
+                except ui_client.ApiError as error:
+                    handle_api_error(error)
         st.divider()
         st.markdown("**Oturum**")
         st.caption(str(user.get("email", "")))
-        st.caption("Sohbet geçmişi bu oturum süresince saklanır.")
+        st.caption("Tamamlanan soru ve yanıtlar hesabına kaydedilir.")
         if st.button("Çıkış yap", use_container_width=True):
             sign_out()
         st.markdown(f"<br><span class='muted'>API · {escape(API_URL)}</span>", unsafe_allow_html=True)
@@ -306,7 +434,9 @@ def render_chat() -> None:
     st.markdown('<div class="eyebrow">TRTEK · TEKNİK DESTEK</div>', unsafe_allow_html=True)
     st.title("Merhaba, nasıl yardımcı olabilirim?")
     st.markdown('<p class="muted">Sorunu anlat. Yanıtlar, kullanılabilir bilgi tabanındaki kaynaklarla birlikte gösterilir.</p>', unsafe_allow_html=True)
-    st.info("Bu sohbet yalnızca mevcut oturumda tutulur. Sayfayı yenilediğinde veya çıkış yaptığında geçmiş silinebilir.", icon="ℹ️")
+    st.caption("Eski konuşmalarına soldaki Kayıtlı sohbetler bölümünden ulaşabilirsin.")
+    if notice := st.session_state.pop("feedback_notice", None):
+        st.toast(notice)
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -317,6 +447,8 @@ def render_chat() -> None:
                     st.caption("Bu aramada soruyla doğrudan eşleşen yeterli bir kaynak bulunamadı.")
                 if message.get("elapsed_ms") is not None:
                     st.caption(f"Yanıt süresi · {message['elapsed_ms'] / 1000:.1f} sn")
+        if message["role"] == "assistant":
+            render_feedback_prompt(message)
 
     st.caption("Takip soruları için son 3 tamamlanmış soru–yanıt çifti, uzunluk sınırı içinde kullanılır. Yeni bir konu için Yeni sohbet'e basabilirsin.")
     pending_by_mode = st.session_state.setdefault("pending_requests", {})
@@ -338,6 +470,7 @@ def render_chat() -> None:
         st.session_state.messages.append(user_message)
         request = {"id": str(uuid4()), "question": question, "history": history,
                    "mode": st.session_state.expertise, "message": user_message,
+                   "chat_id": st.session_state.get("mode_chat_ids", {}).get(st.session_state.expertise),
                    "messages": st.session_state.messages, "running": False}
         pending_by_mode[request["mode"]] = request
         with st.spinner("Kaynaklar inceleniyor, yanıt hazırlanıyor…"):

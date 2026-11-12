@@ -287,7 +287,7 @@ giriş denemelerine hız sınırı henüz eklenmedi.
 Önceki girişsiz `/ask` örnekleri artık `401` döndürür. Değerlendirme aracını
 kullanırken girişten alınan tokenı `APP_ACCESS_TOKEN` ortam değişkenine koy;
 araç tokenı sonuç dosyalarına kaydetmez. Canlı RAG için ayrıca PostgreSQL ve
-model erişim ayarlarının hazır olması gerekir. Sohbet geçmişi henüz bağlı değil.
+model erişim ayarlarının hazır olması gerekir. Kalıcı sohbet için aşağıdaki 12 Kasım güncellemesine bak.
 
 
 ## Streamlit web arayüzü
@@ -305,8 +305,7 @@ uzmanlık modunu, Markdown yanıtlarını ve güvenli HTTP(S) kaynak bağlantıl
 gösterir. Token yalnızca Streamlit'in kullanıcı oturum belleğinde tutulur;
 dosyaya veya URL'ye yazılmaz. Çıkış oturum verisini siler. 401 yeni girişe
 yönlendirir; API/DB hazır olmadığında görünen 503 mesajı giriş bilgilerini
-silmez. Soru ve yanıt geçmişi yalnızca geçerli Streamlit oturumunda tutulur,
-kalıcı sohbet geçmişi değildir.
+silmez. Tamamlanan soru–yanıt çiftleri MSSQL’e kaydedilir; yeniden girişten sonra kayıtlı sohbetlerden açılabilir.
 
 Testleri `.venv\Scripts\python.exe -B -m unittest discover -s tests -v` ile
 çalıştır. API sunucusunu ve MSSQL'i ayrı çalıştırmadan yalnız arayüzün giriş
@@ -375,7 +374,7 @@ API yeniden başlatılırken terminalde eski bağlantı değişkeni bulunuyorsa 
 
 Arama son soru–yanıt çiftiyle güncel soruyu birlikte kullanır; bunun için ek bir LLM çağrısı yapılmaz. Modelin JSON girdisine sınırlı geçmiş ayrıca eklenir. Geçmiş konuşmayı yorumlamak içindir; önceki asistan mesajları teknik kanıt sayılmaz, yanıtın dayanağı güncel aramada bulunan ilgili kaynaklardır.
 
-Streamlit yalnız tamamlanmış çiftleri gönderir. Son çift veya toplam bağlam uzunluk sınırını aşıyorsa bütün çiftler korunarak daha az geçmiş gönderilir; kod ve cümleler ortadan kesilmez. Başarısız/bekleyen sorular bağlama eklenmez. Uzmanlık alanlarının konuşmaları mevcut oturum içinde ayrı tutulur. `Yeni sohbet` seçili alanın konuşmasını temizler; `Çıkış yap` token ve bütün alanların konuşmalarını temizler. Kalıcı kayıt yapılmaz; sayfa yenileme veya bağlantı kaybında geçmiş silinebilir.
+Streamlit kalıcı sohbet uçlarını kullanır. Son üç tamamlanmış çift sunucuda veritabanından seçilir; uzunluk sınırları korunur. Yeni sohbet eski kaydı silmeden yeni konuşma başlatır; çıkış yalnız yerel oturum verisini temizler.
 ### Başarısız soruyu yeniden deneme
 
 Bağlantı, zaman aşımı veya geçici servis hatasında soru korunur ve `Tekrar dene` görünür. Düğme aynı soruyu, uzmanlık alanını, geçmişi ve `request_id` değerini gönderir; kullanıcı mesajını ikinci kez eklemez. Hata kendiliğinden yeniden denenmez. `401` oturumu temizler, `503` sohbeti korur; doğrulama hatalarında soru düzeltilmelidir. Yeni sohbet seçili alanın bekleyen isteğini de temizler. Diğer uzmanlık alanlarında o isteğin düğmesi gösterilmez.
@@ -396,6 +395,24 @@ Tüm uçlar Bearer oturumu ister; kullanıcı kimliği yalnız JWT doğrulaması
 
 Başkasının sohbeti ve bulunmayan sohbet aynı `404` yanıtını döndürür. Veritabanı hataları bağlantı ayrıntıları sızdırılmadan `503` olur. Oluşturma işlemi transaction ile tamamlanır; hata durumunda geri alınır. Başlangıç SQL şeması yeniden çalıştırılmaz.
 
-Bu aşama geçmiş API'sinin temelidir: Streamlit henüz bu uçları kullanmaz ve `/ask` henüz mesajları bu tablolara kaydetmez. Arayüzdeki oturum içi geçmiş bildirimi bu nedenle korunmuştur. Sonraki aşama soru/yanıt yazımı, tekrar denemenin kalıcı istek kimliğiyle yönetilmesi ve geçmiş ekranıdır.
+Bu temel, 12 Kasım güncellemesinde Streamlit ekranına ve kalıcı soru–yanıt yazımına bağlandı. Bağımsız `/ask` uyumluluk amacıyla kalır ve kayıt yapmaz; arayüz `/chats/{chat_id}/ask` kullanır.
 
 `tests/test_chat_history.py` kimlik, doğrulama ve sorgu parametrelerini sahte bağlantıyla sınar. `CHAT_HISTORY_SQL_TEST=1` açıkça verilirse ek test gerçek yerel SQL bağlantısını kullanır; tüm test kayıtları aynı transaction içinde kalır ve sonunda rollback yapılır. Gerçek SQL testi ilk denemede bağlantı zaman aşımına uğradı. Windows yeniden başlatılıp SQL Express başlatıldıktan sonra 6 Kasım 2026 tarihinde gerçek SQL üzerinde sahiplik, sayfalama ve kaynak okuma testi başarıyla tamamlandı; geçici kayıtlar rollback ile geri alındı. Kontrolde min server memory 16 MB, max server memory 1410 MB olarak okundu; bu ayarlar değiştirilmedi.
+
+### Kalıcı sohbet bağlantısı (12 Kasım 2026)
+
+- Mevcut veritabanında bir kez `python -m mssql.upgrade_chat_persistence` çalıştırılır. `MSSQL_CONNECTION_STRING` önceden ayarlanmalıdır. Bu işlem yalnız nullable `response_json` alanını ekler; eski kayıtları silmez. Yeni kurulumda güncel `schema.sql` kullanılır.
+- `POST /chats/{chat_id}/ask` yalnız `question` ve UUID `request_id` alır. Mod ve sınırlı geçmiş JWT sahibinin veritabanındaki sohbetinden okunur; istemci geçmiş veya kullanıcı kimliği gönderemez.
+- Model çağrısı sırasında SQL bağlantısı açık tutulmaz. Başarılı yanıt, soru, kaynak görüntüsü ve tam yanıt JSON’u kısa bir transaction içinde birlikte kaydedilir. Hata olursa ikisi de geri alınır; başarısız deneme kalıcı geçmişe eklenmez.
+- Kaydedilen aynı istek kimliği ve soru tekrar gelirse SQL’deki yanıt döner. Aynı kimlik farklı soru için 409’dur. Kaydetme hatasından sonraki açık tekrar denemede üretilmiş yanıt işlem belleğinde 10 dakika tutulur; API yeniden başlamışsa ve kayıt tamamlanmamışsa yeniden üretim gerekebilir.
+- Aynı sohbete eşzamanlı başka bir soru kaydolursa eski bağlamla üretilen ikinci yanıt kaydedilmez; 409 sonrası sohbet yeniden açılıp soru yeni istek olarak gönderilir.
+- Solda kayıtlı sohbetler ve devam sayfaları bulunur. Sohbet seçilince mesajlar ve kaynakları yüklenir; yeni sorular aynı sohbet altında sürer. Yeni sohbet eski veriyi silmez. Sayfa yenilenince tekrar giriş gerekebilir; giriş sonrası sohbet listesi geri gelir. Önceki sürümün yalnız bellekteki mesajları geriye dönük kurtarılamaz.
+- `tests/test_saved_chat.py` sunucu kaynaklı bağlamı, sahipliği, rollback/tekrar denemeyi ve arayüzde geçmişi yeniden açmayı sınar. `CHAT_HISTORY_SQL_TEST=1` gerçek SQL kontrollerini de etkinleştirir; test kayıtları rollback ile kaldırılır. Testlerde bulut model çağrısı yapılmaz.
+
+### Yanıt değerlendirme (12 Kasım 2026)
+
+Kaydedilmiş her yanıtın ardından ayrı bir arayüz mesajında “Bu yanıtı değerlendirmek ister misiniz?” daveti ve “Değerlendir / Şimdi değil” düğmeleri gösterilir. Davet model bağlamına veya sohbet mesajları tablosuna eklenmez. Değerlendir düğmesi açılır pencereyi açar: 1–5 arasında puan zorunlu, en fazla 2000 karakter yorum isteğe bağlıdır. Kullanıcı pencereyi kapatarak vazgeçebilir. Şimdi değil seçimi mevcut oturumda daveti gizler; sohbet yeniden açıldığında puanlanmamış yanıt tekrar değerlendirilebilir.
+
+`PUT /chats/{chat_id}/requests/{request_id}/feedback` JWT sahibinin sohbetindeki yalnız tamamlanmış assistant yanıtını değerlendirir. `rating` 1–5 tam sayı, `comment` isteğe bağlıdır; başka kullanıcı kimliği gönderilemez. Başkasının veya bulunamayan yanıtın değerlendirilmesi 404’tür. Mevcut `feedback` tablosu kullanılır; şema güncellemesi gerekmez. Aynı yanıta tekrar puan verilirse mevcut kayıt transaction içinde güncellenir. Kaydedilen puan ve yorum sohbet mesajlarıyla geri döner; çıkış/giriş sonrası görünür, düzenlenebilir. Kayıt hatasında form korunur; kendiliğinden yeniden gönderilmez. Bu puan kullanıcı geri bildirimidir, teknik doğruluğun bağımsız kanıtı değildir.
+
+API güncellendikten sonra yeniden başlatılmalıdır. `tests/test_feedback.py` yetki, doğrulama, tek kayıt güncelleme, açılır pencere ve hata sonrası açık tekrar denemeyi sınar. `CHAT_HISTORY_SQL_TEST=1` gerçek SQL testini de çalıştırır; örnek veriler rollback ile geri alınır. Bulut modeli çağrılmaz.

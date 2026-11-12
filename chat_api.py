@@ -51,6 +51,19 @@ class SavedMessage(BaseModel):
     sources: list
     model_name: str | None
     created_at: datetime
+    feedback_rating: int | None = None
+    feedback_comment: str | None = None
+
+
+class FeedbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rating: int = Field(strict=True, ge=1, le=5)
+    comment: str | None = Field(default=None, max_length=2000)
+
+
+class FeedbackInfo(BaseModel):
+    rating: int
+    comment: str | None
 
 
 class MessagePage(BaseModel):
@@ -87,3 +100,10 @@ def get_chat(chat_id: UUID, user: dict = Depends(require_user)):
 def list_messages(chat_id: UUID, after_seq: int = Query(default=0, ge=0, le=2147483647),
                   limit: int = Query(default=50, ge=1, le=100), user: dict = Depends(require_user)):
     return _call(service.list_messages, str(user["id"]), str(chat_id), after_seq, limit)
+
+
+@router.put("/{chat_id}/requests/{request_id}/feedback", response_model=FeedbackInfo)
+def save_feedback(chat_id: UUID, request_id: UUID, request: FeedbackRequest,
+                  user: dict = Depends(require_user)):
+    return _call(service.save_feedback, str(user["id"]), str(chat_id), str(request_id),
+                 request.rating, request.comment)

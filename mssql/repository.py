@@ -191,10 +191,74 @@ class MSSQLRepository:
         self._owned_session(user_id, session_id)
         return self._query(
             "SELECT TOP (?) m.id, m.message_seq, m.role, m.content, m.message_status, m.request_id, "
-            "m.citations_json, m.source_snapshot_json, m.model_name, m.created_at "
+            "m.citations_json, m.source_snapshot_json, m.model_name, m.created_at, "
+            "f.rating AS feedback_rating, f.comment AS feedback_comment "
             "FROM dbo.chat_messages m JOIN dbo.chat_sessions s ON s.id = m.session_id "
             "JOIN dbo.users u ON u.id = s.user_id "
+            "LEFT JOIN dbo.feedback f ON f.message_id = m.id "
             "WHERE m.session_id = ? AND m.message_seq > ? AND s.user_id = ? AND u.is_active = 1 "
             "ORDER BY m.message_seq",
             limit, _uuid(session_id), after_seq, _uuid(user_id),
+        )
+
+    def save_feedback(self, user_id: str, session_id: str, request_id: str,
+                      rating: int, comment: str | None = None) -> dict:
+        if type(rating) is not int or not 1 <= rating <= 5:
+            raise ValueError("Puan 1 ile 5 arasında olmalı.")
+        if comment is not None:
+            if not isinstance(comment, str) or len(comment) > 2000:
+                raise ValueError("Yorum en fazla 2000 karakter olmalı.")
+            comment = comment.strip() or None
+        # Serialize the upsert and check ownership before resolving the answer.
+        self._owned_session(user_id, session_id, lock=True)
+        messages = self._query(
+            "SELECT id FROM dbo.chat_messages WHERE session_id=? AND request_id=? "
+            "AND role=N'assistant' AND message_status=N'completed'",
+            _uuid(session_id), _uuid(request_id),
+        )
+        if len(messages) != 1:
+            raise RecordNotFoundError("Değerlendirilecek yanıt bulunamadı.")
+        message_id = str(messages[0]["id"])
+        existing = self._query("SELECT id FROM dbo.feedback WHERE message_id=?", message_id)
+        if existing:
+            self._query(
+                "UPDATE dbo.feedback SET rating=?, comment=?, updated_at=SYSUTCDATETIME() WHERE message_id=?",
+                rating, comment, message_id,
+            )
+        else:
+            self._query(
+                "INSERT dbo.feedback (id, message_id, rating, comment) VALUES (?, ?, ?, ?)",
+                str(uuid4()), message_id, rating, comment,
+            )
+        return {"rating": rating, "comment": comment}
+
+    def turn_state(self, user_id: str, session_id: str, request_id: str, *, lock=False) -> dict:
+        """Short transaction: authorize, check durable retry, read bounded context."""
+        self._owned_session(user_id, session_id, lock=lock)
+        session = self.get_session(user_id, session_id)
+        saved = self._query(
+            "SELECT role, content, response_json FROM dbo.chat_messages "
+            "WHERE session_id=? AND request_id=? ORDER BY message_seq",
+            _uuid(session_id), _uuid(request_id),
+        )
+        recent = self._query(
+            "SELECT TOP (6) message_seq, role, content, message_status "
+            "FROM dbo.chat_messages WHERE session_id=? ORDER BY message_seq DESC",
+            _uuid(session_id),
+        )
+        return {"session": session, "saved": saved, "recent": list(reversed(recent)),
+                "last_seq": recent[0]["message_seq"] if recent else 0}
+
+    def save_turn(self, user_id: str, session_id: str, request_id: str,
+                  question: str, response: dict) -> None:
+        """Caller owns transaction; question, answer and replay payload commit together."""
+        self.add_message(user_id, session_id, "user", question, request_id=request_id)
+        answer = self.add_message(
+            user_id, session_id, "assistant", response["answer"], request_id=request_id,
+            citations=response.get("used_source_ids", []), source_snapshot=response.get("sources", []),
+        )
+        self._query(
+            "UPDATE dbo.chat_messages SET response_json=?, latency_ms=? WHERE id=?",
+            json.dumps(response, ensure_ascii=False, allow_nan=False), response.get("elapsed_ms"),
+            str(answer["id"]),
         )

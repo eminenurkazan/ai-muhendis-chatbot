@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from conversation import validate_history
 
 import rag_service
+import chat_service
 from chat_api import router as chat_router
 from auth_api import require_user, router as auth_router
 from registration_api import router as registration_router
@@ -63,6 +64,33 @@ class AskResponse(BaseModel):
     used_source_ids: list[str]
     retrieved_source_ids: list[str]
     sources: list[dict[str, object]]
+
+
+class SavedAskRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(min_length=1, max_length=2000)
+    request_id: UUID
+
+
+@app.post("/chats/{chat_id}/ask", response_model=AskResponse)
+def ask_saved(chat_id: UUID, request: SavedAskRequest, user: dict = Depends(require_user)):
+    """History and expertise come from the authenticated user's saved chat."""
+    def generate(question, **options):
+        return AskResponse(**rag_service.ask_question(question, **options)).model_dump(mode="json")
+    try:
+        return chat_service.answer_chat(str(user["id"]), str(chat_id), request.question,
+                                        str(request.request_id), generate)
+    except chat_service.ChatNotFound as error:
+        raise HTTPException(status_code=404, detail=str(error)) from None
+    except (chat_service.ChatUnavailable, rag_service.ServiceUnavailable, ReplayBusy) as error:
+        raise HTTPException(status_code=503, detail=str(error)) from None
+    except ReplayConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from None
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
+    except Exception as error:
+        logger.error("Sohbet isteği tamamlanamadı: %s", type(error).__name__)
+        raise HTTPException(status_code=502, detail="Yanıt üretilemedi veya kaydedilemedi. Tekrar deneyebilirsin.") from None
 
 
 @app.post("/ask", response_model=AskResponse)

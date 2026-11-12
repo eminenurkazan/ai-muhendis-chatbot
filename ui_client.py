@@ -46,7 +46,7 @@ def request_json(base_url: str, path: str, *, method: str = "GET", payload: dict
         if response.status_code == 401:
             message = "Oturum doğrulanamadı. Yeniden giriş yap."
         elif response.status_code == 404:
-            message = ("Çalışan API kayıt adresini tanımıyor (404). Eski API'yi kendi terminalinde "
+            message = "Sohbet bulunamadı veya bu hesaba ait değil." if path.startswith("/chats/") else ("Çalışan API kayıt adresini tanımıyor (404). Eski API'yi kendi terminalinde "
                        "Ctrl+C ile durdurup proje klasöründe `powershell.exe -NoProfile "
                        "-ExecutionPolicy Bypass -File .\\start_api.ps1` komutuyla yeniden başlat.")
         elif response.status_code == 405:
@@ -102,3 +102,42 @@ def ask(base_url: str, token: str, question: str, expertise_mode: str, *, histor
     return request_json(base_url, "/ask", method="POST",
                         payload=payload,
                         token=token, timeout=180)
+
+
+def create_chat(base_url, token, title, expertise_mode):
+    return request_json(base_url, "/chats", method="POST", token=token,
+                        payload={"title": title[:200], "expertise_mode": expertise_mode}, timeout=20)
+
+
+def list_chats(base_url, token, offset=0):
+    return request_json(base_url, f"/chats?offset={offset}&limit=50", token=token, timeout=20)
+
+
+def load_messages(base_url, token, chat_id):
+    from uuid import UUID
+    chat_id = str(UUID(str(chat_id)))
+    messages, after = [], 0
+    while True:
+        page = request_json(base_url, f"/chats/{chat_id}/messages?after_seq={after}&limit=100",
+                            token=token, timeout=20)
+        messages.extend(page["items"])
+        next_after = page.get("next_after_seq")
+        if next_after is None:
+            return messages
+        if next_after <= after:
+            raise ApiError(None, "Sohbet geçmişi okunamadı.")
+        after = next_after
+
+
+def ask_saved(base_url, token, chat_id, question, request_id):
+    from uuid import UUID
+    chat_id = str(UUID(str(chat_id)))
+    return request_json(base_url, f"/chats/{chat_id}/ask", method="POST", token=token,
+                        payload={"question": question, "request_id": str(request_id)}, timeout=180)
+
+
+def save_feedback(base_url, token, chat_id, request_id, rating, comment=None):
+    from uuid import UUID
+    chat_id, request_id = str(UUID(str(chat_id))), str(UUID(str(request_id)))
+    return request_json(base_url, f"/chats/{chat_id}/requests/{request_id}/feedback", method="PUT",
+                        token=token, payload={"rating": rating, "comment": comment}, timeout=20)
