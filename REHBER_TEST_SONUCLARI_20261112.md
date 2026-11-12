@@ -92,3 +92,59 @@ Bu yerel kanıtlar Git dışında tutulur. Depodaki yapılandırılmış rehber 
 - Doğal dil kontrolü (windows_server modu, olay metnini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt ShutdownTimeLimit (varsayılan 90 sn), zorla kapatma/geri dönüştürme, iki inceleme yolu (süreyi kontrol etme, w3wp.exe bellek dökümü) ve "süreyi artırmak nedeni çözmez" sınırını doğru aktardı. Süre 12,3 sn.
 - Elle değerlendirme: Yanıt rehberin IIS 7.0/7.5 kapsamını açıkça belirtti ve kullanıcının IIS sürümünü sordu; bu sürüm sınırının korunduğunu gösteren iyi bir davranıştır. Kaynakta olmayan komut veya ayar adımı uydurulmadı.
 - Sınır: Kaynak 2020 tarihli ve IIS 7.0/7.5 içindir; yeni sürümler için geçerliliği doğrulanmadı. Komut içermez, gerçek ortamda denenmedi (`execution_tested=false`).
+
+## Yedinci rehber: Oracle erişim yolları (12 Kasım 2026)
+
+- Kaynak: Oracle 19c SQL Tuning Guide, Optimizer Access Paths; kayıt `oracle:19c:tgsql:optimizer-access-paths`. Kayıt dosyası telif nedeniyle Git dışındadır ([KAYNAK_POLITIKASI.md](KAYNAK_POLITIKASI.md)). Önceki 452 kayıt/chunk değişmedi, toplam 453. Kendi vektörüyle ilk üçte bulundu.
+- Doğal dil kontrolü (oracle_db modu, rehber ifadelerini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt "indeks var ama kullanılmadı" sorusuna kaydın nedenlerini sıraladı (fonksiyon, bileşik indeksin ilk sütunu, başı joker LIKE, düşük seçicilik, istatistik), access/filter farkını ve DISPLAY_CURSOR çağrısını verdi, imlecin önbellekte olması koşulunu belirtti. Süre 15,8 sn.
+- Elle değerlendirme: Kaynakla çelişen veya kayıtta olmayan komut/öneri görülmedi. Yanıt belirli bir sorguyu hızlandırma iddiası taşımadı.
+- Sınır: Kaydın bazı ifadeleri kaynak sayfasının özetinden alındı; sayfa HTML'inde yalnız işlem adları ve komut doğrulandı. Gerçek Oracle ortamında çalıştırılmadı; `execution_tested=false`.
+
+## Sekizinci rehber: Oracle optimizer istatistikleri (12 Kasım 2026)
+
+- Kaynak: Oracle 19c SQL Tuning Guide, Gathering Optimizer Statistics; kayıt `oracle:19c:tgsql:gathering-optimizer-statistics` (dosya telif nedeniyle Git dışında). Önceki 453 kayıt/chunk değişmedi, toplam 454. Kendi vektörüyle ilk üçte bulundu.
+- Doğal dil kontrolü (oracle_db modu, rehber ifadelerini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt STALE_STATS sorgusunu, YES/NO/NULL anlamını, %10 eşiğini, GATHER_TABLE_STATS çağrısını ve otomatik toplamayı doğru aktardı; "sonraki planları değiştirebilir, hızlanma garantisi yok, üretimde DBA ile değerlendirin" sınırlarını belirtti. Süre 21,1 sn (bu rehberin ölçümleri arasında en uzunu; model yanıt süresi dalgalanıyor).
+- Elle değerlendirme: Kaynakla çelişen öneri görülmedi. "Gerekli yetkilere sahip olmanız gerekir" ifadesi kaynaktan değil, kaydın bize ait sınırlamalar notundandır.
+- Sınır: Kaynak sayfanın son ~4000 karakteri özetleyici tarafından okunmadı; kayıttaki olgular okunan bölümden ve sayfa HTML'inde doğrulandı. Gerçek ortamda çalıştırılmadı; `execution_tested=false`.
+
+## Chunk kararı
+
+Bilgi tabanındaki kayıtlar (ticket, QA, rehber) kısadır; her rehber ön koşul, komut ve sınırlarıyla birlikte tek chunk olarak embedding'lenir. Bölmek komutu koşullarından koparabileceği için otomatik parçalama yapılmadı. 12.000 karakteri aşan rehberler aktarım aracınca reddedilir. Uzun belge parçalama stratejisi değerlendirilmemiştir.
+
+## Dokuzuncu rehber: Oracle sorgu dönüşümleri (12 Kasım 2026)
+
+- Kaynak: Oracle 19c SQL Tuning Guide, Query Transformations (OR expansion, view merging, predicate pushing, subquery unnesting); kayıt `oracle:19c:tgsql:query-transformations` (dosya telif nedeniyle Git dışında). Önceki 454 kayıt/chunk değişmedi, toplam 455. Kendi vektörüyle ilk üçte bulundu.
+- Kayıt hazırlanırken sayfa özetleyicisinin verdiği ipucu (hint) adları (USE_CONCAT, NO_MERGE, PUSH_PRED, NO_UNNEST, NO_QUERY_TRANSFORMATION vb.) kaynak HTML'inde bulunamadı; kayda konmadı. Kayıt doğrudan sayfa metnindeki dört alt bölüme dayandırıldı.
+- Doğal dil kontrolü (oracle_db modu, rehber ifadelerini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı (ikinci sırada erişim yolları rehberi de arama sonucunda geldi). Yanıt subquery unnesting ve view merging'i doğru açıkladı, koşulları (aynı satırlar, AVG gibi toplama, maliyet/geçerlilik) belirtti, "plan SQL'den farklı olması tek başına sorun değil, hangi dönüşümün uygulandığı planda incelenmeli" sınırını korudu. Süre 12,9 sn.
+- Elle değerlendirme: Kaynakta olmayan komut veya ipucu adı uydurulmadı; belirli sorguyu hızlandırma iddiası yok.
+- Gerçek Oracle ortamında çalıştırılmadı; `execution_tested=false`.
+
+## Onuncu rehber: Oracle Real-Time SQL Monitoring (12 Kasım 2026)
+
+- Kaynak: Oracle 19c SQL Tuning Guide, Monitoring Database Operations; kayıt `oracle:19c:tgsql:real-time-sql-monitoring` (dosya telif nedeniyle Git dışında). Önceki 455 kayıt/chunk değişmedi, toplam 456. Kendi vektörüyle ilk üçte bulundu. Kayıt, sayfanın indirilen metninden doğrudan okunarak hazırlandı; 5 saniye eşiği, STATISTICS_LEVEL, /*+ MONITOR */, Tuning Pack ve CONTROL_MANAGEMENT_PACK_ACCESS ifadeleri sayfada doğrulandı.
+- Doğal dil kontrolü (oracle_db modu, rehber ifadelerini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt plan adımı başına süre/CPU/okuma-yazma/I/O ölçümlerini, V$SQL_MONITOR ve V$SQL_PLAN_MONITOR görünümlerini, otomatik izleme koşullarını ve kaynaktaki örnek çağrıyı doğru aktardı; Tuning Pack nedeniyle ek lisans gerekebileceğini ve lisansın ortamda doğrulanması gerektiğini belirtti. Süre 11,5 sn.
+- Elle değerlendirme: Kaynakla çelişen veya kayıtta olmayan komut görülmedi; sorguyu hızlandırma iddiası yok. Kaynak sayfa REPORT_SQL_MONITOR için hem DBMS_SQL_MONITOR hem DBMS_SQLTUNE adını geçirir; kayıt yalnız sayfadaki örnek çağrıyı verir, hangisinin doğru olduğu belirlenmedi.
+- Gerçek Oracle ortamında çalıştırılmadı; `execution_tested=false`.
+
+## Oracle optimizasyon rehberleri özeti
+
+Test raporundaki 5 Oracle optimizasyon sorusu için kaynak konular: EXPLAIN PLAN ile tahmini plan, erişim yolları, optimizer istatistikleri, sorgu dönüşümleri ve Real-Time SQL Monitoring (5 rehber). Rehberler test konularına bakılarak seçilmiştir; sonuçlar bu seçimden iyimser etkilenebilir. Tablespace ve RMAN rehberleri sonraki adımdır.
+
+## On birinci rehber: Oracle tablespace alanı (12 Kasım 2026)
+
+- Kaynak: Oracle 19c Administrator's Guide, Managing Tablespaces; kayıt `oracle:19c:admin:tablespace-space-and-growth` (dosya telif nedeniyle Git dışında). Önceki 456 kayıt/chunk değişmedi, toplam 457. Kendi vektörüyle ilk üçte bulundu. Kayıt, sayfanın indirilen metninin ilgili alt bölümleri doğrudan okunarak hazırlandı.
+- Doğal dil kontrolü (oracle_db modu, rehber ifadelerini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. İkinci kullanılan kaynak mevcut bir Stack Exchange kaynaklı kayıttır (`dba:q260240:a260244`); yanıttaki "hangi segmentler yer kullanıyor, kullanıcıların varsayılan tablespace/quota ayarları" önerisi bu kayıttan geldi (kayıt metni doğrulandı), rehberden değil. Yanıt boş alan ve veri dosyası sorgularını, ADD DATAFILE komutunu, bigfile'a ADD DATAFILE verilmemesi uyarısını, "depolama/yapılandırmayı değiştirir, üretimde önce test edin" sınırını ve DBA onayını aktardı. Süre 12,2 sn.
+- Elle değerlendirme: Kaynakla çelişen komut görülmedi. "Disk alanı ve DBA onayı" uyarısı kaynakta bu bölümde yok, rehber kaydındaki bize ait nottur ve yanıtta öyle ayrıştırılmadı.
+- Gerçek Oracle ortamında çalıştırılmadı; `execution_tested=false`.
+
+## On ikinci rehber: Oracle RMAN yedek raporlama (12 Kasım 2026)
+
+- Kaynak: Oracle 19c Backup and Recovery User's Guide, Reporting on RMAN Operations; kayıt `oracle:19c:bradv:rman-backup-reporting` (dosya telif nedeniyle Git dışında). Önceki 457 kayıt/chunk değişmedi, toplam 458. Kendi vektörüyle ilk üçte bulundu. Kayıt, sayfanın indirilen metninin ilgili bölümleri doğrudan okunarak hazırlandı.
+- Kapsam sınırı: Rehber yalnız yedeklerin raporlanmasıdır (LIST BACKUP SUMMARY, REPORT NEED BACKUP, REPORT OBSOLETE, REPORT UNRECOVERABLE). Yedek alma, geri yükleme (restore) ve kurtarma (recovery) rehberleri eklenmemiştir; proje isterindeki "backup-restore" maddesi yalnız raporlama tarafıyla karşılanmaktadır.
+- Doğal dil kontrolü (oracle_db modu, rehber ifadelerini kopyalamayan soru): beklenen kaynak ilk sırada ve yanıtta kullanıldı. Yanıt dört raporlama komutunu, REPORT NEED BACKUP'ın saklama politikası NONE iken çalışmadığını ve CROSSCHECK'in depo durumunu güncellediği için salt rapor olmadığını doğru aktardı; silme kararı için DBA onayını önerdi. Süre 12,8 sn.
+- Elle değerlendirme: Kaynakla çelişen komut görülmedi. "LIST ve REPORT komutları yedek silmez" ifadesi kaynakta bu sözlerle yazmaz; kaynak bu komutları raporlama komutları olarak anlatır, sonuç bu tanımdan çıkarımdır. "DBA onayı" ifadesi kaynak değil, rehber kaydındaki bize ait nottur.
+- Gerçek Oracle ortamında çalıştırılmadı; `execution_tested=false`.
+
+## Rehber envanteri (12 Kasım 2026)
+
+Bilgi tabanı 458 kayıt/chunk. Yeni resmî rehberler: Windows 5 (AD çoğaltma raporu, domain join DNS, IIS 403.14, hesap kilitlenmesi/EventCombMT, IIS Event 5013), Oracle 7 (EXPLAIN PLAN, erişim yolları, optimizer istatistikleri, sorgu dönüşümleri, Real-Time SQL Monitoring, tablespace alanı, RMAN raporlama). Rehberlerin hiçbiri gerçek AD, IIS veya Oracle ortamında çalıştırılmadı.
