@@ -1,0 +1,28 @@
+{
+  "source_record_id": "microsoft:kb2498185:replication-diagnosis",
+  "source_name": "Microsoft Learn — Windows Server Troubleshooting",
+  "source_url": "https://learn.microsoft.com/en-us/troubleshoot/windows-server/active-directory/diagnose-replication-failures",
+  "source_version": "ef29a4d47fdaf68f011968b755347dfc9d4607568e9e059f1517ba61654769ec",
+  "source_author": "Microsoft",
+  "license": "CC-BY-4.0",
+  "license_url": "https://github.com/MicrosoftDocs/SupportArticles-docs/blob/main/LICENSE",
+  "domain": "windows_server",
+  "record_type": "documentation",
+  "title": "Active Directory çoğaltma hatalarını repadmin ile raporlama",
+  "problem": "Active Directory nesneleri aynı çoğaltma kapsamındaki domain controller sunucularında tutarlı görünmüyor; çoğaltma hataları nasıl incelenir?",
+  "product_version_environment": "Kaynak: desteklenen Windows Server sürümleri; AD DS/DC ortamı. Repadmin için RSAT gerekir. Makale, raporlama adımında yönetici komut istemi ve Enterprise Admins kimlik bilgilerini belirtir. Kişisel Windows bilgisayarında AD ortamı var sayılmaz.",
+  "commands": [
+    "repadmin /showrepl * /csv >showrepl.csv"
+  ],
+  "solution": "Ön koşul: AD ortamına erişim ve Repadmin/RSAT hazır olmalıdır. Kaynak, yönetici komut istemini Enterprise Admins kimlik bilgileriyle açmayı tarif eder.\n1. Çoğaltma durumunu CSV dosyasına çıkarın:\n```cmd\nrepadmin /showrepl * /csv >showrepl.csv\n```\n2. showrepl.csv dosyasını Excel’de açıp filtreleyin. Last Success Time değerlerini eskiden yeniye sıralayın.\n3. Source DC veya Source DSA alanında silinmiş DC’leri ayırın; Last Failure Time için sıfır olmayan kayıtları inceleyin.\n4. Last Failure Status alanındaki hatayı belirleyin; hataya özgü onarım için ilgili Microsoft sorun giderme belgesine geçin. Bu rehber onarım komutu içermez.",
+  "limitations": "Komut çoğaltma durumunu raporlar ve çalışılan klasöre CSV yazar; sorunu onarmaz. Yazılabilir klasör gerekir, aynı adlı dosya yönlendirmeyle üzerine yazılabilir. Rapor DC adları ve altyapı bilgileri içerebilir. Başarı teyidi veya üretimde çalıştırma testi yapılmadı. Genel yetki düşürme, zorla senkronizasyon, DNS/registry değişikliği önerilmez.",
+  "resolution": "Beklenen çıktı: kaynak/hedef DC ve son çoğaltma başarısı/hatasını incelemeye yarayan CSV raporu. Belirli bir arızanın çözüldüğü bildirilmemiştir.",
+  "solution_scope": "procedure",
+  "resolution_confirmed": null,
+  "official_verification_status": "official_source_scoped",
+  "official_context": "Microsoft KB2498185 içindeki CSV ile tanı alt kapsamı kaynakla karşılaştırıldı. Bu bir onarım veya bağımsız ortam testi değildir.",
+  "transformation": "Microsoft makalesinin CSV tanı bölümü Türkçe özetlendi; komut korunmuştur. Excel biçimlendirme ayrıntıları ve alternatif araçlar dışarıda bırakıldı.",
+  "retrieved_at": "2026-11-12",
+  "execution_tested": false,
+  "source_snapshot_sha256": "ef29a4d47fdaf68f011968b755347dfc9d4607568e9e059f1517ba61654769ec"
+}

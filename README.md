@@ -416,3 +416,8 @@ Kaydedilmiş her yanıtın ardından ayrı bir arayüz mesajında “Bu yanıtı
 `PUT /chats/{chat_id}/requests/{request_id}/feedback` JWT sahibinin sohbetindeki yalnız tamamlanmış assistant yanıtını değerlendirir. `rating` 1–5 tam sayı, `comment` isteğe bağlıdır; başka kullanıcı kimliği gönderilemez. Başkasının veya bulunamayan yanıtın değerlendirilmesi 404’tür. Mevcut `feedback` tablosu kullanılır; şema güncellemesi gerekmez. Aynı yanıta tekrar puan verilirse mevcut kayıt transaction içinde güncellenir. Kaydedilen puan ve yorum sohbet mesajlarıyla geri döner; çıkış/giriş sonrası görünür, düzenlenebilir. Kayıt hatasında form korunur; kendiliğinden yeniden gönderilmez. Bu puan kullanıcı geri bildirimidir, teknik doğruluğun bağımsız kanıtı değildir.
 
 API güncellendikten sonra yeniden başlatılmalıdır. `tests/test_feedback.py` yetki, doğrulama, tek kayıt güncelleme, açılır pencere ve hata sonrası açık tekrar denemeyi sınar. `CHAT_HISTORY_SQL_TEST=1` gerçek SQL testini de çalıştırır; örnek veriler rollback ile geri alınır. Bulut modeli çağrılmaz.
+
+
+### İlk resmî rehberler (12 Kasım 2026)
+
+Windows AD çoğaltma raporu ve Oracle 19c tahmini SQL planı rehberleri eklendi; toplam bilgi tabanı 448 kayıt/chunk. Aktarım, kaynaklı yanıt, kullanıcı kontrolleri ve açık zaman aşımı sorunu [rehber test raporunda](REHBER_TEST_SONUCLARI_20261112.md) ayrı gösterilir. Komutlar gerçek AD/Oracle ortamında çalıştırılmadı.

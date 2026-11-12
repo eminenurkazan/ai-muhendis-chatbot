@@ -256,6 +256,11 @@ def render_sources(sources: object) -> None:
             address = safe_source_url(source.get("answer_url") or source.get("source_url"))
             if address:
                 st.markdown(f"[Kaynağı aç]({address})")
+            if source.get("record_type") == "documentation":
+                st.caption(f"{source.get('source_author', '')} · {source.get('license', '')} · Kaynaktan uyarlanmıştır; ortamda çalıştırılarak test edilmemiştir.")
+                license_address = safe_source_url(source.get("license_url"))
+                if license_address:
+                    st.markdown(f"[Lisans]({license_address})")
 
 
 @st.dialog("Yanıtı değerlendir")
@@ -355,7 +360,8 @@ def render_chat() -> None:
     # Apply navigation before the expertise selectbox is instantiated.
     if selected_chat := st.session_state.pop("open_saved_chat", None):
         try:
-            rows = ui_client.load_messages(API_URL, st.session_state.token, selected_chat["id"])
+            with st.spinner("Kayıtlı sohbet açılıyor…"):
+                rows = ui_client.load_messages(API_URL, st.session_state.token, selected_chat["id"])
             mode = selected_chat["expertise_mode"]
             messages = [{"role": row["role"], "content": row["content"],
                          "chat_id": selected_chat["id"], "request_id": row.get("request_id"),
@@ -435,6 +441,8 @@ def render_chat() -> None:
     st.title("Merhaba, nasıl yardımcı olabilirim?")
     st.markdown('<p class="muted">Sorunu anlat. Yanıtlar, kullanılabilir bilgi tabanındaki kaynaklarla birlikte gösterilir.</p>', unsafe_allow_html=True)
     st.caption("Eski konuşmalarına soldaki Kayıtlı sohbetler bölümünden ulaşabilirsin.")
+    if not st.session_state.messages and st.session_state.get("mode_chat_ids", {}).get(st.session_state.expertise):
+        st.info("Bu sohbet açıldı, ancak henüz kaydedilmiş mesajı yok. Önceki istek tamamlanmadıysa soru ve yanıt geçmişe eklenmez. Sorunu aşağıdan yeniden gönderebilirsin.")
     if notice := st.session_state.pop("feedback_notice", None):
         st.toast(notice)
 

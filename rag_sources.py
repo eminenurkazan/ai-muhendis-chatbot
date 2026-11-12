@@ -10,8 +10,8 @@ def source_reference(record: dict) -> dict:
         'source_name': record.get('source_name', ''),
         'source_url': record.get('source_url', ''),
     }
-    for key in ('answer_url', 'question_author', 'answer_author', 'question_license', 'answer_license',
+    for key in ('source_author', 'license', 'license_url', 'execution_tested', 'answer_url', 'question_author', 'answer_author', 'question_license', 'answer_license',
                 'question_license_url', 'answer_license_url', 'official_verification_status', 'official_sources', 'transformation'):
-        if record.get(key):
+        if key in record:
             reference[key] = record[key]
     return reference

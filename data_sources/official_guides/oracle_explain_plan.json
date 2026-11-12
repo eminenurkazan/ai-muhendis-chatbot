@@ -1,0 +1,43 @@
+{
+  "source_record_id": "oracle:19c:tgsql:explain-plan-basic",
+  "source_name": "Oracle Database 19c SQL Tuning Guide",
+  "source_url": "https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/generating-and-displaying-execution-plans.html",
+  "source_version": "92de5afb6897e9f6cd57b6075ba4c7f01b692bd2107269bb05744f601363620b",
+  "source_author": "Oracle and/or its affiliates",
+  "license": "Oracle documentation copyright; açık lisans varsayılmadı",
+  "license_url": "https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/",
+  "domain": "oracle_db",
+  "record_type": "documentation",
+  "title": "Oracle 19c — EXPLAIN PLAN ve DBMS_XPLAN.DISPLAY ile tahmini plan",
+  "problem": "Oracle SQL sorgusunun tahmini yürütme planını, sorguyu çalıştırmadan nasıl görüntülerim?",
+  "product_version_environment": "Oracle Database 19c; SQL*Plus veya SQL Developer. PLAN_TABLE kullanılabilir olmalı; plana yazma/okuma ve açıklanan sorgunun nesnelerine erişme yetkileri gerekir. Örnek employees tablosuna erişilen şema içindir. ex_plan2 kimliği önceki planlarla karışmamalı; bu kimlik kullanılmamış olmalıdır.",
+  "commands": [
+    "EXPLAIN PLAN\n  SET statement_id = 'ex_plan2' FOR\n  SELECT last_name\n  FROM   employees\n  WHERE  last_name LIKE 'Pe%';",
+    "SELECT PLAN_TABLE_OUTPUT\n  FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'ex_plan2','BASIC'));"
+  ],
+  "solution": "Aynı oturumda şu örnek adımları uygulayın. employees örnek tablosu yoksa bu SQL olduğu gibi kullanılamaz.\n1. Sorgunun tahmini planını üretin:\n```sql\nEXPLAIN PLAN\n  SET statement_id = 'ex_plan2' FOR\n  SELECT last_name\n  FROM   employees\n  WHERE  last_name LIKE 'Pe%';\n```\n2. Belirtilen planı BASIC biçiminde görüntüleyin:\n```sql\nSELECT PLAN_TABLE_OUTPUT\n  FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'ex_plan2','BASIC'));\n```\n3. İşlemleri ve erişim yollarını inceleyin. Görülen planın gerçek çalıştırmadaki planla aynı olması garanti değildir.",
+  "resolution": "Beklenen çıktı: plan adımı kimliği, işlem ve nesne adını gösteren tablo. Sorgunun hızlandığı veya arızanın giderildiği gösterilmez.",
+  "limitations": "EXPLAIN PLAN, açıklanan SELECT’i çalıştırmaz; PLAN_TABLE içine plan satırları yazar. Gerçek süre/satır ölçümü değildir. BASIC çıktısı sınırlıdır. İndeks veya istatistik değişikliği önerilmez. Oracle ortamında çalıştırılmadı; otomatik SYSDBA veya geniş yetki verme talimatı içermez.",
+  "solution_scope": "procedure",
+  "resolution_confirmed": null,
+  "official_verification_status": "official_source_scoped",
+  "official_context": "SQL Tuning Guide 19c, Example 6-3 ve EXPLAIN PLAN ön koşulları karşılaştırıldı. Yalnız tahmini plan tanısı; performans düzeltmesi veya çalışma testi değil.",
+  "transformation": "İlgili bölümün kısa Türkçe özeti; Example 6-3 komutları korunmuştur. Tam kitap yeniden dağıtılmaz; kaynak telif hakları korunur.",
+  "retrieved_at": "2026-11-12",
+  "execution_tested": false,
+  "source_snapshot_sha256": "92de5afb6897e9f6cd57b6075ba4c7f01b692bd2107269bb05744f601363620b",
+  "source_evidence": [
+    {
+      "section": "Explaining a SQL Statement: Basic Steps",
+      "claim": "PLAN_TABLE ve sorgu nesneleri için gerekli yetkiler"
+    },
+    {
+      "section": "Example 6-3",
+      "claim": "İki SQL komutu ve BASIC plan biçimi"
+    },
+    {
+      "section": "About the EXPLAIN PLAN Statement",
+      "claim": "Tahmini/gerçek plan farkı ve PLAN_TABLE yazımı"
+    }
+  ]
+}

@@ -41,7 +41,7 @@ def search_chunks(query_vector: list[float], *, embedding_model: str, limit: int
             'limitations':limitations or '', 'chunk_id':str(chunk_id),'source_name':source_name,
             'source_url':metadata.get('question_url') or source_url or '',
         }
-        for key in ('answer_url','question_author','answer_author','question_license','answer_license',
+        for key in ('source_author', 'license', 'license_url', 'execution_tested', 'answer_url','question_author','answer_author','question_license','answer_license',
                     'question_license_url','answer_license_url','official_verification_status','official_sources',
                     'official_context','product_version_environment','source_evidence','transformation'):
             if key in metadata:

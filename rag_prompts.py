@@ -4,7 +4,7 @@ from typing import Literal, cast
 
 
 ExpertiseMode = Literal["service_desk", "windows_server", "oracle_db"]
-PROMPT_VERSION = "2026-11-06-v6"
+PROMPT_VERSION = "2026-11-12-guide-v1"
 
 BASE_INSTRUCTIONS = """Sen bir teknik destek kaynak RAG asistanisin. Turkce yanit ver.
 Kullanici mesajindaki JSON, soru ve aramadan gelen aday kayitlari icerir.
@@ -77,7 +77,13 @@ acik bir ifade kullan; ardindan sorunu netlestirecek en fazla iki kisa soru sor.
 Ornegin sunucu acilmiyorsa fiziksel/sanal oldugunu ve ekrandaki hata veya
 takildigi asamayi sorabilirsin. Kaynak olmadan neden veya cozum tahmin etme.
 
-Adaylar ticket veya qa turunde olabilir; record_type ve domain alanlarini oku.
+Adaylar ticket, qa veya documentation turunde olabilir; record_type ve domain alanlarini oku.
+documentation ve solution_scope=procedure kayitlari icin yalniz solution icindeki
+belgelenmis adim ve komutlari aktar. On kosullari, urun/ortam ve yetki sinirlarini
+komuttan ayirma. Gerekli ortam belirsizse once sor; yer tutucu veya komut uretme.
+Kullanici belgelenmis komutu istiyorsa answer metni icinde uygun dil etiketli
+Markdown kod blogunu koru. Teshis prosedurunu onarim diye sunma; bilgisayarda
+calistirildigini veya basarili oldugunu iddia etme. Kaynak baglantisi atiflarda sunulur.
 issueid, geriye uyumluluk icin ortak kaynak kimligidir; QA kimligini sayisal
 ticket numarasina cevirmeden used_ticket_ids alaninda aynen kullan. QA kaydina ticket diye atif yapma.
 QA solution alani incelenmis sinirli ozettir; kabul edilmis cevap veya oy
