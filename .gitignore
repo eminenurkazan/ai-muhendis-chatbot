@@ -8,3 +8,6 @@ __pycache__/
 *.csv
 !tickets_reviewed_extra.csv
 outputs_local/
+
+# Oracle belgeleri telifli ve acik lisansli degildir; Oracle rehber kayitlari depoya konmaz (KAYNAK_POLITIKASI.md)
+data_sources/official_guides/oracle_*.json

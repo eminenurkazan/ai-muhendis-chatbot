@@ -3,7 +3,7 @@
 Oracle Database 19c SQL Tuning Guide içindeki EXPLAIN PLAN ön koşulları ve Example 6-3 temel alınmıştır. Amaç bir sorgunun tahmini yürütme planını aynı oturumda üretmek ve BASIC biçiminde görüntülemektir. Bu bir performans düzeltmesi değildir.
 
 - Resmî kaynak: https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/generating-and-displaying-execution-plans.html
-- Hazırlanan kayıt: `data_sources/official_guides/oracle_explain_plan.json`.
+- Hazırlanan kayıt: `data_sources/official_guides/oracle_explain_plan.json`. **Bu dosya telif nedeniyle Git'e konmaz** (`.gitignore`); yalnız yerelde ve veritabanında durur. Ayrıntı: [KAYNAK_POLITIKASI.md](KAYNAK_POLITIKASI.md).
 - Tür: `documentation`; kapsam: `procedure`; alan: `oracle_db`.
 - Oracle telif atfı korunur; Microsoft kaynaklarına ait CC-BY-4.0 lisansı bu rehbere taşınmaz. Tam kitap depoya konmaz; kısa uyarlanmış açıklama ve sınırlı kaynak örneği kullanılır.
 - PLAN_TABLE erişimi, açıklanan sorgunun nesne yetkileri, employees örnek tablosu ve kullanılmamış statement ID ön koşulları kayıttadır. Tablo kurma veya geniş yetki verme komutları üretilmez.

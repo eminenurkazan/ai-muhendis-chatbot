@@ -18,7 +18,12 @@ Stack Exchange ve Mendeley kayıtları ayrı bir süreçtir ([UZMANLIK_VERILERIN
 ## 2. Lisansa göre davranış
 
 - **CC-BY-4.0 (Microsoft):** Türkçe özet veya uyarlama yapılabilir. Yazar, kaynak bağlantısı, lisans ve lisans bağlantısı kayıtta tutulur; içeriğin uyarlandığı belirtilir. Lisans bilgisi her sayfa için ilgili depodan okunur; başka sayfa için varsayılmaz.
-- **Oracle:** Metin kopyalanmaz. Kayıt, kısa ve kendi cümlelerimizle yazılmış bir özettir. Belgelenmiş komut/SQL yalnız çalışmak için gerekli en kısa biçimde, bire bir ve kaynağa atıfla alınır. `license` alanına "Oracle documentation copyright; açık lisans varsayılmadı" yazılır. CC-BY lisansı Oracle içeriğine uygulanmaz.
+- **Oracle:** Oracle belgelerinde açık lisans yoktur. Oracle'ın yasal bildirimi, lisans sözleşmesi veya yasanın izin verdiği haller dışında belgenin herhangi bir bölümünün kullanılmasını, kopyalanmasını, çevrilmesini, değiştirilmesini ve dağıtılmasını yasaklar ([bildirim](https://docs.oracle.com/global_resources/cpyr.htm)). 19c rehberlerinin kendi bildirim sayfası doğrulanamadı; bu belge hukuki görüş değildir. Bu nedenle:
+  - **Oracle rehber kayıtları depoya konmaz.** `data_sources/official_guides/oracle_*.json` `.gitignore` içindedir; kayıtlar yalnız yerel veritabanında ve yerel dosyada tutulur. Kaynak kopyaları zaten `outputs_local/` altındadır.
+  - **Olgu temelli kısa kayıt:** Metin çevrilmez veya cümle cümle özetlenmez. Kayıt, belgenin bildirdiği olguları kendi ifademizle verir: komut veya paketin ne yaptığı, ön koşul/yetki, sınır. Bölüm yapısı ve örnek cümleler taklit edilmez.
+  - **Komut:** Çalışmak için gereken en kısa, genel sözdizimi biçimi kullanılır. Belgedeki örnek tablo, örnek veri ve örnek çıktı bire bir alınmaz; gerekirse genel yer tutucularla (ör. `<tablo_adı>`) yazılır.
+  - **Atıf:** Kaynak bağlantısı, bölüm adı ve sürüm (ör. 19c) kayıtta kalır. `license` alanına "Oracle documentation copyright; açık lisans varsayılmadı" yazılır. CC-BY lisansı Oracle içeriğine uygulanmaz.
+  - **Uzunluk:** Kayıt kısa tutulur (yaklaşık 1500 karakter altı, bir komut/kavram odağı).
 - Lisansı belirlenemeyen sayfa eklenmez.
 
 ## 3. Kapsam kuralları
@@ -55,7 +60,7 @@ Kayıt `data_sources/official_guides/<ad>.json` dosyasındadır; alan adları me
 - [ ] Kaynak Bölüm 1 tablosunda.
 - [ ] Sayfa açıldı, lisans ilgili LICENSE dosyasından veya sayfadan okundu ve kayda yazıldı.
 - [ ] Varsa her komut kaynak sayfada bire bir bulundu (komut yoksa `commands` boş).
-- [ ] Oracle ise: metin kopyalanmadı, özet kendi cümlelerimizle yazıldı.
+- [ ] Oracle ise: metin çevrilmedi/kopyalanmadı, olgu temelli ve kısa; örnek tablo/veri/çıktı bire bir alınmadı; kayıt dosyası `oracle_*.json` adıyla `.gitignore` kapsamında ve `git status` listesinde görünmüyor.
 - [ ] Tanı odaklı; değişiklik yapan adım varsa açıkça işaretli.
 - [ ] Tek chunk, 12.000 karakterin altında.
 - [ ] Sürüm ve ön koşul/yetki yazıldı.
