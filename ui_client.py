@@ -45,6 +45,8 @@ def request_json(base_url: str, path: str, *, method: str = "GET", payload: dict
         # Sunucudan gelen ham girdileri, tokenları ve dahili hata ayrıntılarını ekrana taşıma.
         if response.status_code == 401:
             message = "Oturum doğrulanamadı. Yeniden giriş yap."
+        elif response.status_code == 403:
+            message = "Bu bölüm yalnızca yönetici hesapları içindir."
         elif response.status_code == 404:
             message = "Sohbet bulunamadı veya bu hesaba ait değil." if path.startswith("/chats/") else ("Çalışan API kayıt adresini tanımıyor (404). Eski API'yi kendi terminalinde "
                        "Ctrl+C ile durdurup proje klasöründe `powershell.exe -NoProfile "
@@ -134,6 +136,11 @@ def ask_saved(base_url, token, chat_id, question, request_id):
     chat_id = str(UUID(str(chat_id)))
     return request_json(base_url, f"/chats/{chat_id}/ask", method="POST", token=token,
                         payload={"question": question, "request_id": str(request_id)}, timeout=180)
+
+
+def admin_report(base_url, token, days=30):
+    days = int(days)
+    return request_json(base_url, f"/admin/report?days={days}&top=10", token=token, timeout=30)
 
 
 def save_feedback(base_url, token, chat_id, request_id, rating, comment=None):

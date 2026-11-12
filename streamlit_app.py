@@ -68,9 +68,12 @@ footer { visibility:hidden; }
 [data-testid="stHeader"] {
   background:transparent;
   height:0;
+  overflow:visible;
   pointer-events:none;
 }
-[data-testid="stToolbar"],
+[data-testid="stExpandSidebarButton"] { position:fixed; top:.6rem; left:.6rem; z-index:999991; }
+/* stToolbar also holds the "open sidebar" button, so hide only its action items. */
+[data-testid="stToolbarActions"],
 [data-testid="stAppDeployButton"],
 [data-testid="stDecoration"],
 [data-testid="stMainMenu"],
@@ -430,6 +433,10 @@ def render_chat() -> None:
                 except ui_client.ApiError as error:
                     handle_api_error(error)
         st.divider()
+        if user.get("role") == "admin":
+            if st.button("Yönetim paneli", use_container_width=True):
+                st.session_state.view = "admin"
+                st.rerun()
         st.markdown("**Oturum**")
         st.caption(str(user.get("email", "")))
         st.caption("Tamamlanan soru ve yanıtlar hesabına kaydedilir.")
@@ -486,6 +493,72 @@ def render_chat() -> None:
         st.rerun()
 
 
+def _percent(value) -> str:
+    return "—" if value is None else f"%{value:.1f}".replace(".", ",")
+
+
+def render_admin() -> None:
+    """Admin reporting panel; the API enforces the admin role, the UI only hides the entry."""
+    with st.sidebar:
+        st.markdown('<div class="brand"><span class="brand-mark">T</span>TRtek</div>', unsafe_allow_html=True)
+        if st.button("Sohbete dön", use_container_width=True):
+            st.session_state.view = "chat"
+            st.rerun()
+        st.caption(str(st.session_state.user.get("email", "")))
+        if st.button("Çıkış yap", use_container_width=True):
+            sign_out()
+    st.markdown('<div class="eyebrow">TRTEK · YÖNETİM</div>', unsafe_allow_html=True)
+    st.title("Raporlama paneli")
+    days = st.selectbox("Dönem", [7, 30, 90, 365], index=1, format_func=lambda d: f"Son {d} gün")
+    try:
+        with st.spinner("Rapor hazırlanıyor…"):
+            report = ui_client.admin_report(API_URL, st.session_state.token, days)
+    except ui_client.ApiError as error:
+        if error.status == 403:
+            st.session_state.view = "chat"
+        handle_api_error(error)
+        return
+    first = st.columns(4)
+    first[0].metric("Soru", report["questions"])
+    first[1].metric("Sohbet", report["chats"])
+    first[2].metric("Aktif kullanıcı / toplam", f"{report['users_active']} / {report['users_total']}")
+    latency = report["avg_latency_ms"]
+    first[3].metric("Ort. yanıt süresi", "—" if latency is None else f"{latency / 1000:.1f} sn")
+    second = st.columns(4)
+    second[0].metric("Memnuniyet (4–5 puan)", _percent(report["satisfaction_rate"]),
+                     help="Puanlanan yanıtlar içinde 4 veya 5 alanların oranı.")
+    second[1].metric("Ort. puan", "—" if report["avg_rating"] is None else str(report["avg_rating"]).replace(".", ","))
+    second[2].metric("Kaynaklı yanıt oranı", _percent(report["source_answer_rate"]),
+                     help="Yeterli kaynak bulunan yanıtların oranı.")
+    second[3].metric("Puanlanan yanıt", f"{report['rated_total']} / {report['answers']}")
+    st.caption("Chatbot başarısı iki ölçüyle izlenir: kullanıcı memnuniyeti ve kaynak bulunabilirliği. "
+               "İkisi de yanıtın teknik doğruluğunun bağımsız kanıtı değildir; puanlanan yanıt sayısı azsa dikkatli yorumla.")
+    left, right = st.columns(2)
+    with left:
+        st.subheader("En çok sorulan sorular")
+        if report["top_questions"]:
+            st.dataframe([{"Soru": row["question"], "Sayı": row["asked"], "Puanlanan": row["rated"],
+                           "Ort. puan": row["avg_rating"]} for row in report["top_questions"]],
+                         hide_index=True, use_container_width=True)
+            st.caption("Aynı metinli sorular (büyük/küçük harf ve baştaki/sondaki boşluk ayrımı yok) birlikte sayılır.")
+        else:
+            st.info("Bu dönemde soru yok.")
+    with right:
+        st.subheader("Puan dağılımı")
+        st.bar_chart({str(star): count for star, count in sorted(report["rating_distribution"].items())})
+    left, right = st.columns(2)
+    with left:
+        st.subheader("Uzmanlık alanına göre sorular")
+        names = {value: name for name, value in MODES.items()}
+        if report["by_mode"]:
+            st.bar_chart({names.get(row["expertise_mode"], row["expertise_mode"]): row["questions"]
+                          for row in report["by_mode"]})
+    with right:
+        st.subheader("Günlük soru sayısı")
+        if report["daily"]:
+            st.bar_chart({row["day"]: row["questions"] for row in report["daily"]})
+
+
 def main() -> None:
     token = st.session_state.get("token")
     if token:
@@ -505,7 +578,11 @@ def main() -> None:
                 st.error(str(error))
                 st.stop()
     if st.session_state.get("token"):
-        render_chat()
+        if st.session_state.get("view") == "admin" and st.session_state.get("user", {}).get("role") == "admin":
+            render_admin()
+        else:
+            st.session_state.view = "chat"
+            render_chat()
     else:
         render_auth()
 

@@ -262,3 +262,68 @@ class MSSQLRepository:
             json.dumps(response, ensure_ascii=False, allow_nan=False), response.get("elapsed_ms"),
             str(answer["id"]),
         )
+
+    def admin_report(self, days: int = 30, top: int = 10) -> dict:
+        """Aggregate usage and quality figures for the admin panel (read-only).
+
+        Counts cover messages created in the last ``days`` days. Ratings are
+        user feedback, not an independent measure of technical correctness.
+        """
+        if type(days) is not int or not 1 <= days <= 365 or type(top) is not int or not 1 <= top <= 50:
+            raise ValueError("Gün sayısı 1-365, liste uzunluğu 1-50 olmalı.")
+        since = "DATEADD(day, -?, SYSUTCDATETIME())"
+        totals = self._query(
+            "SELECT "
+            "(SELECT COUNT(*) FROM dbo.users) AS users_total, "
+            "(SELECT COUNT(*) FROM dbo.users WHERE is_active = 1) AS users_active, "
+            "(SELECT COUNT(*) FROM dbo.chat_sessions WHERE created_at >= " + since + ") AS chats, "
+            "(SELECT COUNT(*) FROM dbo.chat_messages WHERE role = N'user' AND created_at >= " + since + ") AS questions, "
+            "(SELECT COUNT(*) FROM dbo.chat_messages WHERE role = N'assistant' AND message_status = N'completed' "
+            " AND created_at >= " + since + ") AS answers, "
+            "(SELECT COUNT(*) FROM dbo.chat_messages WHERE role = N'assistant' AND message_status = N'completed' "
+            " AND created_at >= " + since + " AND JSON_VALUE(response_json, '$.insufficient_context') = 'true') AS no_context_answers, "
+            "(SELECT AVG(CAST(latency_ms AS float)) FROM dbo.chat_messages WHERE role = N'assistant' "
+            " AND latency_ms IS NOT NULL AND created_at >= " + since + ") AS avg_latency_ms",
+            days, days, days, days, days)[0]
+        rated = self._query(
+            "SELECT f.rating, COUNT(*) AS n FROM dbo.feedback f JOIN dbo.chat_messages m ON m.id = f.message_id "
+            "WHERE m.created_at >= " + since + " GROUP BY f.rating", days)
+        distribution = {rating: 0 for rating in range(1, 6)}
+        for row in rated:
+            distribution[int(row["rating"])] = int(row["n"])
+        rated_total = sum(distribution.values())
+        top_questions = self._query(
+            "SELECT TOP (?) LOWER(LEFT(LTRIM(RTRIM(q.content)), 300)) AS question, COUNT(*) AS asked, "
+            "AVG(CAST(f.rating AS float)) AS avg_rating, COUNT(f.id) AS rated "
+            "FROM dbo.chat_messages q "
+            "LEFT JOIN dbo.chat_messages a ON a.session_id = q.session_id AND a.request_id = q.request_id "
+            "AND a.role = N'assistant' AND a.message_status = N'completed' "
+            "LEFT JOIN dbo.feedback f ON f.message_id = a.id "
+            "WHERE q.role = N'user' AND q.created_at >= " + since + " "
+            "GROUP BY LOWER(LEFT(LTRIM(RTRIM(q.content)), 300)) "
+            "ORDER BY COUNT(*) DESC, MAX(q.created_at) DESC",
+            top, days)
+        by_mode = self._query(
+            "SELECT s.expertise_mode AS expertise_mode, COUNT(*) AS questions "
+            "FROM dbo.chat_messages q JOIN dbo.chat_sessions s ON s.id = q.session_id "
+            "WHERE q.role = N'user' AND q.created_at >= " + since + " "
+            "GROUP BY s.expertise_mode ORDER BY COUNT(*) DESC", days)
+        daily = self._query(
+            "SELECT CAST(created_at AS date) AS day, COUNT(*) AS questions FROM dbo.chat_messages "
+            "WHERE role = N'user' AND created_at >= " + since + " GROUP BY CAST(created_at AS date) ORDER BY day", days)
+        answers = int(totals["answers"])
+        return {
+            "days": days,
+            "users_total": int(totals["users_total"]), "users_active": int(totals["users_active"]),
+            "chats": int(totals["chats"]), "questions": int(totals["questions"]), "answers": answers,
+            "answers_with_sources": answers - int(totals["no_context_answers"]),
+            "avg_latency_ms": None if totals["avg_latency_ms"] is None else round(float(totals["avg_latency_ms"])),
+            "rated_total": rated_total, "satisfied": distribution[4] + distribution[5],
+            "rating_distribution": distribution,
+            "avg_rating": None if not rated_total else round(sum(k * v for k, v in distribution.items()) / rated_total, 2),
+            "top_questions": [{"question": row["question"], "asked": int(row["asked"]), "rated": int(row["rated"]),
+                               "avg_rating": None if row["avg_rating"] is None else round(float(row["avg_rating"]), 2)}
+                              for row in top_questions],
+            "by_mode": [{"expertise_mode": row["expertise_mode"], "questions": int(row["questions"])} for row in by_mode],
+            "daily": [{"day": str(row["day"]), "questions": int(row["questions"])} for row in daily],
+        }
