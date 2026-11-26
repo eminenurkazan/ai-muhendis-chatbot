@@ -8,7 +8,7 @@ import pyodbc
 from mssql import connection
 
 
-TIMEOUT = pyodbc.Error("08001", "[08001] [Microsoft][ODBC Driver 18 for SQL Server]Shared Memory Provider: Timeout error [258].  (258)")
+TIMEOUT = pyodbc.Error("08001", "[08001] [Microsoft][ODBC Driver 17 for SQL Server]Shared Memory Provider: Timeout error [258].  (258)")
 LOGIN = pyodbc.Error("28000", "[28000] Login failed for user 'x' Server=secret-host Pwd=hunter2")
 
 

@@ -15,7 +15,7 @@ $previousConnection = [Environment]::GetEnvironmentVariable('MSSQL_CONNECTION_ST
 Push-Location -LiteralPath $projectDir
 
 try {
-    $env:MSSQL_CONNECTION_STRING = 'Driver={ODBC Driver 17 for SQL Server};Server=.\SQLEXPRESS;Database=master;Trusted_Connection=Yes;'
+    $env:MSSQL_CONNECTION_STRING = 'Driver={ODBC Driver 17 for SQL Server};Server=.\SQLEXPRESS;Database=master;Trusted_Connection=Yes;Encrypt=Yes;TrustServerCertificate=Yes;'
     & $python -m mssql.check_connection
     $testExitCode = $LASTEXITCODE
 } finally {

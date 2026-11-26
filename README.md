@@ -49,7 +49,7 @@ Benzerlik skoru doğruluk yüzdesi değildir. Kaynak kimliği kontrolü de yanı
 - Yerel API'nin kayıtlı oturum akışı için Windows. Kimlik bilgileri Windows hesabına bağlı DPAPI korumasıyla proje dışında saklanır.
 - Docker Desktop ve Docker Compose: PostgreSQL 16 + pgvector için.
 - Cloudflare Workers AI hesap kimliği ve erişim token'ı; kodun kullandığı modele erişebilen ChatGPT oturumu.
-- MSSQL katmanını ayrıca kullanmak için SQL Server ve uygun ODBC sürücüsü. Mevcut yerel kurulum SQL Server 2022 Express ve ODBC Driver 18 kullanır.
+- MSSQL katmanını ayrıca kullanmak için SQL Server ve uygun ODBC sürücüsü. Mevcut yerel kurulum SQL Server 2022 Express ve ODBC Driver 17 kullanır.
 
 Model çağrıları ağ erişimi ve ilgili hesaplarda kullanılabilir erişim/kota gerektirir. Depoda API isteği sırasında etkileşimli giriş başlatılmaz; ilk giriş terminalden yapılır.
 
@@ -257,7 +257,7 @@ Kod ve testlerdeki parolalar örnektir, gerçek hesap bilgisi kullanılmamalıd�
 
 ### 6 Kasım yerel bağlantı doğrulaması
 
-Güncel yerel SQL bağlantısı ODBC Driver 18 kullanır. SQL Express yeniden başlatıldıktan sonra gerçek SQL üzerinde sohbet sahipliği, sayfalama ve kaynak okuma testi geçti; geçici kayıtlar geri alındı. Örnek ayar ve doğrulama betiği ODBC 18 ile eşitlendi. Bu kontrol canlı LLM çağrısı içermez.
+Bu tarihteki yerel SQL bağlantısı ODBC Driver 18 kullanıyordu. SQL Express yeniden başlatıldıktan sonra gerçek SQL üzerinde sohbet sahipliği, sayfalama ve kaynak okuma testi geçti; geçici kayıtlar geri alındı. Bu kontrol canlı LLM çağrısı içermez. Güncel sürücü seçimi için aşağıdaki "Yerel SQL bağlantısı: ODBC 17" bölümüne bak.
 
 ## Giriş ve oturum (6 Kasım 2026)
 
@@ -363,9 +363,9 @@ Yanıt doğrulama mesajları parola giriş değerini içermez.
 
 `auth_frontend/index.html`, Streamlit giriş ekranının yerel bileşenidir; uygulamayla birlikte tutulmalıdır. Ek paket veya derleme gerektirmez. Alan uyarıları tarayıcıda güncellenir: dokunulmamış alanlarda erken hata gösterilmez, parola gereksinimleri yazarken güncellenir, eşleşme uyarısı tekrar alanıyla etkileşimden sonra gösterilir. Gönderimde bütün alanlar tekrar kontrol edilir. Sunucu tarafındaki doğrulama kuralları da uygulanır. Başarılı kayıttan sonra parola alanları temizlenir ve giriş ekranı açılır. Token yalnız Python tarafındaki kullanıcı oturumunda tutulur; tarayıcı bileşenine aktarılmaz.
 E-posta uzantısı doğrulaması `email_domains.py` ve `auth_frontend/tlds.json` dosyalarındaki IANA listesiyle hem formda hem kayıt API'sinde uygulanır. Liste kaynağı: https://data.iana.org/TLD/tlds-alpha-by-domain.txt (6 Kasım 2026). Yeni uzantılar eklendiğinde liste güncellenip uygulama yeniden başlatılmalıdır. Çalışma sırasında internet bağlantısı gerektirmez. Bu kontrol alan adı uzantısını doğrular; alan adının posta kabul etmesini veya posta kutusunun varlığını kanıtlamaz.
-### Yerel SQL bağlantısı: ODBC 18
+### Yerel SQL bağlantısı: ODBC 17
 
-Güncel `.env.example`, Microsoft ODBC Driver 18 kullanır. `TrustServerCertificate=Yes` bu bilgisayardaki yerel SQL Express sertifikası içindir. SQL Server 17300 hatası verdiğinde kullanılabilir RAM ve sunucu günlüğü kontrol edilmelidir; hizmetin çalışması bağlantı kabul edebildiğini garanti etmez. Bellek baskısı giderilip hizmet yeniden başlatıldıktan sonra bağlantı doğrulandı.
+Güncel `.env.example` ve `mssql/verify_*.ps1` betikleri Microsoft ODBC Driver 17 kullanır (26 Kasım 2026'da yeni Windows kurulumunda yalnız 17 kurulu olduğu için 18'den geri dönüldü). Bağlantı satırı `Encrypt=Yes` değerini açıkça verdiğinden davranış 18 ile aynıdır; 18 kurulursa yalnız `Driver=` adının değiştirilmesi yeterlidir. `TrustServerCertificate=Yes` bu bilgisayardaki yerel SQL Express sertifikası içindir. SQL Server 17300 hatası verdiğinde kullanılabilir RAM ve sunucu günlüğü kontrol edilmelidir; hizmetin çalışması bağlantı kabul edebildiğini garanti etmez. Bellek baskısı giderilip hizmet yeniden başlatıldıktan sonra bağlantı doğrulandı.
 
 API yeniden başlatılırken terminalde eski bağlantı değişkeni bulunuyorsa önce `Remove-Item Env:MSSQL_CONNECTION_STRING -ErrorAction SilentlyContinue` çalıştırılmalıdır. Böylece `start_api.ps1`, güncel bağlantıyı yerel `.env` dosyasından yükler.
 ### Oturum içi sohbet bağlamı
