@@ -2,46 +2,58 @@
 
 Teknik destek sorularına geçmiş ticket kayıtlarını kaynak göstererek Türkçe yanıt üreten bir staj projesidir. RAG (Retrieval-Augmented Generation) yaklaşımıyla soru önce bilgi tabanında aranır; bulunan kayıtlar dil modeline bağlam olarak verilir. Kaynaklar üzerinde model eğitimi yapılmaz.
 
-Bu README, 6 Kasım 2026 tarihinde uzmanlık kaynaklarının ikinci aktarımıyla güncellenmiştir. Proje şu anda Windows üzerinde terminalden ve yerel FastAPI servisinden kullanılabilen bir pilottur.
+Bu README en son 26 Kasım 2026'da güncellenmiştir. Uygulama Windows üzerinde yerel olarak çalışır: FastAPI servisi ve Streamlit web arayüzü `127.0.0.1` üzerinde açılır.
 
 ## Mevcut durum
 
 | Bileşen | Durum |
 |---|---|
-| Kaynaklı soru–yanıt | PostgreSQL + pgvector araması ve bulut model yanıtı bağlı |
-| API | `POST /ask`; soru, uzmanlık modu, kaynak kimlikleri ve işlem süresi |
-| RAG zinciri | LangChain Runnable ile embedding → arama → yanıt |
+| Web arayüzü | Streamlit, koyu tema: kayıt/giriş, sohbet ekranı (geçmiş + aktif sohbet), uzmanlık modu seçimi, Markdown/kod blokları, 1–5 puanlama |
+| Yönetim paneli | Yalnız admin: raporlama (en çok sorulan sorular, memnuniyet, kaynaklı yanıt oranı), Bilgi Merkezi (yükle, doğrula, onayla, devre dışı bırak), uygulama günlükleri |
+| API | FastAPI, bütün uçlar asenkron; `/auth/*`, `/chats/*`, `/ask`, `/admin/*` |
+| Kullanıcı yönetimi | Özgün JWT (HS256, 30 dk); e-posta ve parola karmaşıklığı kontrolü; PBKDF2-SHA256 salted hash; sohbet sahipliği kontrolü |
+| RAG zinciri | LangChain Runnable: embedding → alan filtreli arama → kaynaklı yanıt |
 | Uzmanlık modları | `service_desk`, `windows_server`, `oracle_db` |
-| MSSQL | Kullanıcı, sohbet ve mesaj erişim katmanı hazır; API'ye henüz bağlı değil |
-| Kayıt | `POST /auth/register`; e-posta/parola kontrolü ve salted hash ile MSSQL kayıt |
-| Giriş / oturum | `/auth/login`, `/auth/me`, 30 dakikalık JWT; `/ask` giriş gerektirir |
-| Arayüz | Streamlit henüz uygulanmadı |
+| Bilgi tabanı (PostgreSQL + pgvector) | 458 onaylı/aramaya hazır kayıt ve chunk |
+| Uygulama veritabanı (SQL Server) | Kullanıcılar, kalıcı sohbetler, puanlar, uygulama günlükleri |
+| Test | 23 soruluk V3 testi: [Test raporu](docs/TEST_RAPORU.md) |
 
-**6 Kasım ikinci aktarım kontrolü: 191 Mendeley ticketı + 22 Windows Server ve 11 Oracle soru–cevabı = 224 onaylı/aramaya hazır kayıt ve chunk.** Kaynak türü, alanı, yazar ve ayrı soru/cevap lisansları korunur. QA’ların yalnız incelenmiş açıklama/teşhis özetleri indekslenir; ham cevap kodları modele verilmez. Kayıtlar üzerinde model eğitimi yapılmaz.
+**Bilgi tabanı (26 Kasım):**
+- 191 Mendeley servis masası ticket'ı
+- 156 Windows Server ve 99 Oracle soru–cevabı (Server Fault / DBA Stack Exchange)
+- 5 Microsoft ve 7 Oracle resmî rehber kaydı
 
-314 soru–cevap adayından toplam 40 kayıt incelendi; 33’ü sınırlı açıklama/teşhis kapsamında eklendi, 7’si elendi. Henüz incelenmemiş 274 aday vardır. İkinci partide 30 kaydın 26’sı eklendi; 4’ü dışarıda bırakıldı. Ham veri ve embedding dosyaları yerelde Git dışında tutulur; temiz klon 224 kaydı kendiliğinden oluşturmaz. [Saklama, alan filtreleri ve API kaynak atıfları](docs/UZMANLIK_VERILERININ_KULLANIMI.md).
+Kaynak türü, alanı, yazar ve lisans bilgileri korunur. Soru–cevapların yalnız incelenmiş açıklama/teşhis özetleri indekslenir; ham cevap kodları modele verilmez. Kayıtlar üzerinde model eğitimi yapılmaz.
+
+Ham veri ve embedding dosyaları yerelde Git dışında tutulur; temiz bir klon bilgi tabanını kendiliğinden oluşturmaz. Ayrıntılar: [Saklama, alan filtreleri ve API kaynak atıfları](docs/UZMANLIK_VERILERININ_KULLANIMI.md).
+
+Teslim belgeleri:
+- [RAG akış diyagramı](docs/RAG_Akisi.md)
+- [ER diyagramı](docs/ER_Taslagi.md)
+- [Model seçimi ve gerekçeleri](docs/Model_Secimi.md)
+- [Test raporu](docs/TEST_RAPORU.md)
 
 ## Nasıl çalışır?
 
 ```mermaid
 flowchart LR
-    A[Terminal veya POST /ask] --> B[Soru doğrulama ve uzmanlık modu]
-    B --> C[Cloudflare BGE-M3 embedding]
-    C --> D[PostgreSQL + pgvector: ilk 3 aday]
-    D --> E[Soru, kaynak kayıtları ve yönergeler]
-    E --> F[Yanıt modeli]
+    A[Streamlit sohbet ekranı] --> B[POST /chats/id/ask<br/>JWT + sohbet sahipliği]
+    B --> C[Uzmanlık modu ve son<br/>soru–yanıtlar MSSQL'den]
+    C --> D[Cloudflare BGE-M3 embedding]
+    D --> E[PostgreSQL + pgvector:<br/>alan filtreli ilk 3 aday]
+    E --> F[gpt-5.6-terra:<br/>yönergeler + kaynaklar + geçmiş]
     F --> G[JSON ve kaynak kimliği kontrolü]
-    G --> H[Türkçe yanıt, kaynaklar ve süre]
+    G --> H[Soru–yanıt MSSQL'e kaydedilir;<br/>yanıt, kaynaklar ve puan daveti]
 ```
 
-1. Soru, Cloudflare Workers AI üzerindeki `@cf/baai/bge-m3` modeliyle 1024 boyutlu vektöre dönüştürülür.
-2. `knowledge_chunks` tablosunda cosine benzerliğiyle en yakın üç aday bulunur. Yalnızca `review_status=approved`, `index_status=ready` ve aynı embedding modeline sahip kayıtlar aranır.
+1. Soru, Cloudflare Workers AI üzerindeki `@cf/baai/bge-m3` modeliyle 1024 boyutlu vektöre dönüştürülür. Sohbetin son soru–yanıt çifti de arama metnine eklenir.
+2. `knowledge_chunks` tablosunda cosine benzerliğiyle en yakın üç aday bulunur. Yalnızca `review_status=approved`, `index_status=ready` olan, aynı embedding modeline sahip ve vektörü kaydın güncel içeriğiyle eşleşen (`record_content_hash`) kayıtlar aranır.
 3. Soru ve aday kayıtların problem, çözüm, sonuç, onay durumu ve sınırlamaları kodda yapılandırılmış `gpt-5.6-terra` modeline gönderilir. Model erişimi mevcut ChatGPT oturumu üzerinden yapılır.
 4. Modelin JSON çıktısı ve kullandığı kaynak kimliklerinin adaylar arasında olması kontrol edilir. İlgili kaynak bulunmadığında `insufficient_context=true` beklenir.
 
 Benzerlik skoru doğruluk yüzdesi değildir. Kaynak kimliği kontrolü de yanıtın bütün teknik ayrıntılarının doğru olduğunu tek başına kanıtlamaz. Yönergeler, müşteri onayını destek beyanından ve geçici çözümü kalıcı çözümden ayırmayı ister.
 
-Üç mod aynı PostgreSQL tablolarını kullanır. Genel mod bütün 224 kaydı arar; Windows Server modu genel ticketlar + Windows QA’larını, Oracle modu genel ticketlar + Oracle QA’larını arar. Uzmanlık modları ayrı eğitilmiş modeller değildir. Kullanılan kayıtların bağlantı, yazar ve lisansları API’nin `sources` alanında döner.
+Üç mod aynı PostgreSQL tablolarını kullanır. Genel mod bütün 458 kaydı arar; Windows Server modu genel ticketlar + Windows QA’larını, Oracle modu genel ticketlar + Oracle QA’larını arar. Uzmanlık modları ayrı eğitilmiş modeller değildir. Kullanılan kayıtların bağlantı, yazar ve lisansları API’nin `sources` alanında döner.
 
 ## Gereksinimler
 
@@ -229,11 +241,11 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 
 ## Sonraki geliştirmeler
 
-- Kullanıcı girişi/JWT ve sahiplik denetimini API'ye bağlamak.
-- Sohbet geçmişini, geri bildirimi ve uygulama loglarını MSSQL'e kaydetmek.
-- Henüz incelenmemiş 274 uzmanlık adayını incelemek ve uygunlarını kaynak/sürüm/atıf bilgileriyle hazırlamak.
-- Uzun belgelerde chunk stratejisi ve 224 kayıtlık karışık havuz için daha geniş bağımsız test seti hazırlamak.
-- Kullanıcı arayüzünü ve dağıtım koşullarını tamamlamak.
+- Oracle geri yükleme/kurtarma (RMAN restore/recovery) için resmî rehber eklemek; mevcut rehber yalnız yedek raporlamayı kapsar.
+- Test raporundaki "geçici çözüm" nitelendirmesi için prompt düzeltmesi yapmak ve V3 setini tekrarlı olarak yeniden çalıştırmak.
+- Çok turlu sohbet senaryolarını değerlendirme setine eklemek.
+- Uzun belgeler için çoklu chunk stratejisi uygulamak.
+- Teslim için depoyu şirket GitLab'ına aktarmak; uzaktan/çok kullanıcılı dağıtım için LLM erişimi ve secret yönetimini kararlaştırmak.
 
 ## Diğer belgeler
 

@@ -1,8 +1,16 @@
-# ER taslağı — Akıllı Servis Masası ve Sistem Uzmanı Chatbot
+# ER diyagramı — Akıllı Servis Masası ve Sistem Uzmanı Chatbot
 
-Proje: PRJIC20260201 · Tarih: 22 Ekim 2026 · Sürüm: 0.7
+Proje: PRJIC20260201 · Tarih: 26 Kasım 2026 · Sürüm: 1.0
 
-Bu belge çalışan PostgreSQL bilgi tabanı ile oluşturulmuş MSSQL uygulama tablolarını birlikte gösterir. PostgreSQL'de 20 onaylı ticket ve 20 arama chunk'ı vardır. SQL Server Express üzerindeki `ServisMasasiApp` veritabanında kullanıcı, sohbet, mesaj, geri bildirim ve log tabloları oluşturuldu; API'nin bu tablolara kayıt yazması henüz uygulanmadı.
+Bu belge, çalışan uygulamanın iki veritabanını gösterir:
+- **PostgreSQL bilgi tabanı:** 458 onaylı ve aramaya hazır kayıt, 458 chunk.
+- **SQL Server uygulama veritabanı `ServisMasasiApp`:** kullanıcılar, sohbetler, mesajlar, yanıt puanları ve uygulama logları. Beş tablonun hepsini çalışan API kullanır.
+
+Fiziksel şemalar:
+- [database/schema.sql](../database/schema.sql) (PostgreSQL)
+- [mssql/schema.sql](../mssql/schema.sql) (SQL Server)
+
+Akış: [RAG_Akisi.md](RAG_Akisi.md).
 
 ## 1. ER neyi gösterir?
 
@@ -15,7 +23,9 @@ ER, hangi bilgilerin hangi tablolarda saklanacağını ve tabloların birbirine 
 | PostgreSQL + pgvector | Kaynaklar, temizlenmiş bilgi kayıtları, chunk metinleri ve embedding vektörleri |
 | MSSQL | Kullanıcılar, sohbetler, mesajlar, yanıt puanları ve uygulama logları |
 
-Belge PostgreSQL'i ilişkisel veriler ve vektörler, MSSQL'i kullanıcı yönetimi ve loglar için istiyor. Sohbet geçmişi ve geri bildirimlerin MSSQL'e yerleştirilmesi bu taslağın uygulama tercihidir.
+Proje isterleri PostgreSQL'i ilişkisel veriler ve vektörler, MSSQL'i kullanıcı yönetimi ve loglar için istiyor. Sohbet geçmişi ve geri bildirimlerin de MSSQL'e yerleştirilmesi uygulama tercihidir: bu kayıtlar kullanıcıya aittir ve sahiplik kontrolü kullanıcı tablosuyla aynı veritabanında yapılır.
+
+İki veritabanı arasında FK yoktur. Bağlantıyı uygulama kurar (bkz. Bölüm 4, "Veritabanları arası bağlantı").
 
 ## 3. PostgreSQL ER diyagramı
 
@@ -106,8 +116,12 @@ Ticket ve soru-cevap kayıtları için sorun/çözüm alanları kullanılır. Re
 - `(record_id, chunk_index)` benzersizdir.
 - Çalışan PostgreSQL şemasında pgvector alanı `vector(1024)` olarak oluşturulmuştur. Cloudflare `@cf/baai/bge-m3` embedding'leri ve model kimliği chunk ile birlikte saklanır; farklı embedding modelleri aynı aramada karıştırılmaz. Model gerekçesi [Model_Secimi.md](Model_Secimi.md) dosyasındadır. RAG yanıtı için `gpt-5.6-terra` erişimi yerel pilotta doğrulanmıştır.
 - Metin ve embedding aynı chunk satırında tutulur. Sadece `review_status=approved` ve `index_status=ready` olan kayıtlar aramaya alınır.
-- İçerik değiştiğinde yeniden indeksleme pending'e alınır. Yeni embedding'ler hazırlandıktan sonra chunk değişimi ve ready durumu PostgreSQL işlemi içinde birlikte kaydedilir. Başarısız işlemde eksik bir chunk grubu aramaya açılmaz.
-- Model değiştiğinde aynı boyutta olsa bile eski ve yeni modellerin vektörleri aynı aramada karıştırılmaz; ilgili indeks yeniden üretilir.
+- **Kayıt–vektör tutarlılığı:**
+  - Her chunk, üretildiği andaki kayıt hash'ini `record_content_hash` alanında taşır.
+  - Arama yalnızca `record_content_hash = knowledge_records.content_hash` olan chunk'ları kullanır. Kayıt metni değişip vektör yenilenmediyse eski vektör aramaya girmez.
+  - Chunk yazımı ve kaydın `ready` durumuna geçmesi aynı PostgreSQL transaction'ındadır. Başarısız işlemde yarım bir chunk aramaya açılmaz.
+- Model değiştiğinde aynı boyutta olsa bile eski ve yeni modellerin vektörleri aynı aramada karıştırılmaz (`embedding_model` filtresi); ilgili indeks yeniden üretilir.
+- `knowledge_chunks → knowledge_records` bağlantısı `ON DELETE CASCADE`, `knowledge_records → knowledge_sources` bağlantısı `ON DELETE RESTRICT` kuralıyla tanımlıdır. Uygulama kayıt silmez; aramadan çıkarılacak kayıt `excluded` yapılır.
 
 ## 4. MSSQL ER diyagramı
 
@@ -147,6 +161,7 @@ erDiagram
         string citations_json
         string source_snapshot_json
         string model_name
+        string response_json
         int input_tokens
         int output_tokens
         int latency_ms
@@ -183,15 +198,28 @@ Bu diyagramdaki tipler okunabilirlik için kavramsal kısa adlarla gösterilir. 
 
 ### Temel kurallar
 
-- Email normalize edilir ve benzersiz tutulur. Parola metni saklanmaz; seçilecek parola karma yönteminin salt/parametreleri içeren kodlanmış çıktısı `password_hash` alanında saklanır. Kriptografik yöntem uygulama aşamasında seçilir.
-- `users.role`: `user`, `admin`. `chat_sessions.expertise_mode`: `service_desk`, `windows_server`, `oracle_db`. `chat_messages.role`: `user`, `assistant`.
-- Mesaj sırası için `(session_id, message_seq)` benzersizdir. JWT'deki kullanıcı kimliği ile sohbet sahibinin eşitliği her sohbet okuma/yazma işleminde kontrol edilir.
-- `message_status`, mesaj durumunu (`pending`, `completed`, `error`); `request_id` aynı isteğe ait olayları izleme kimliğini tutmak için şemada yer alır. Bu alanlar henüz çalışan API'de kullanılmaz.
-- Puan 1–5 arasındadır. Yalnızca assistant mesajı ve ilgili sohbetin sahibi için puan kabul edilir. Mesaj başına en fazla bir puan vardır; kullanıcı kendi puanını güncelleyebilir.
-- Anonim/giriş öncesi olaylar için `app_logs.user_id` boş olabilir. Log ayrıntıları olay bilgisi içerir; parola, JWT ve API anahtarı yazılmaz.
-- Yanıtın `citations_json` alanı, kullanılan PostgreSQL chunk/kayıt kimliklerini, sürüm/hash bilgisini, kaynak adı/URL'sini ve kısa kaynak gösterim bilgisini saklar. Bu, iki veritabanı arasında FK olarak tanımlanmaz; bağlantıyı uygulama yönetir.
-- `source_snapshot_json`, yanıt üretilirken görülen kaynakların kısa metin ve sürüm özetini saklamak için planlanmıştır; ham veri veya gizli bilgi kopyalanmaz.
-- Silinen/güncellenen bilgi kayıtlarının eski mesaj kaynakları izlenebilir kalması için kaynak adı/URL ve içerik sürümü yanıtla birlikte korunur. Gerekirse kaynak kayıtlar fiziksel silme yerine aramadan çıkarılır.
+- **E-posta ve parola:**
+  - E-posta normalize edilir ve benzersiz tutulur.
+  - Parola metni saklanmaz. `password_hash` alanında `pbkdf2_sha256$600000$<salt>$<özet>` biçimi tutulur: her parola için 16 bayt rastgele salt ve 600.000 turlu PBKDF2-HMAC-SHA256.
+  - Doğrulama aynı salt ve tur sayısıyla yeniden hesaplanıp sabit zamanlı karşılaştırmayla yapılır; özet geri döndürülemez.
+- **Alan değerleri:** `users.role`: `user`, `admin`. `chat_sessions.expertise_mode`: `service_desk`, `windows_server`, `oracle_db`. `chat_messages.role`: `user`, `assistant`.
+- **Sahiplik:** Mesaj sırası için `(session_id, message_seq)` benzersizdir. JWT'deki kullanıcı kimliği ile sohbet sahibinin eşitliği her sohbet okuma/yazma işleminde kontrol edilir. Başkasının sohbeti, bulunmayan sohbetle aynı 404 yanıtını alır.
+- **Mesaj durumu:** `message_status` mesaj durumunu (`pending`, `completed`, `error`), `request_id` ise istemcinin gönderdiği istek kimliğini tutar. Aynı istek kimliği ve aynı soruyla gelen tekrar, kayıtlı yanıtı döndürür; model yeniden çağrılmaz.
+- **Yanıt ölçümleri:** `response_json` API'nin tam yanıtını (kaynak kimlikleri, `insufficient_context`, prompt sürümü) saklar; admin raporu "kaynaklı yanıt oranı"nı buradan hesaplar. `latency_ms` yanıt süresini tutar. `input_tokens` ve `output_tokens` şemada vardır ama şu an doldurulmaz.
+- **Puanlar:** Puan 1–5 arasındadır. Yalnızca assistant mesajı ve ilgili sohbetin sahibi için puan kabul edilir. Mesaj başına en fazla bir puan vardır; kullanıcı kendi puanını güncelleyebilir.
+- **Loglar:** Anonim/giriş öncesi olaylar için `app_logs.user_id` boş olabilir. Log ayrıntıları olay bilgisi ve aşama sürelerini içerir. Parola, JWT, API anahtarı, soru ve yanıt metni yazılmaz; gizli anahtar adları `[gizli]` olarak maskelenir.
+
+### Veritabanları arası bağlantı
+
+```mermaid
+flowchart LR
+    M["MSSQL chat_messages<br/>(assistant mesajı)"] -- "citations_json:<br/>kullanılan kaynak kimlikleri" --> R["PostgreSQL knowledge_records<br/>source_record_id"]
+    M -- "source_snapshot_json:<br/>kaynak adı, başlık, URL, yazar, lisans" --> S["Yanıt anındaki kaynak görüntüsü<br/>(MSSQL'de kopya)"]
+```
+
+- `citations_json`, yanıtta kullanılan PostgreSQL kayıt kimliklerini (`source_record_id`) saklar. Bu bağlantı FK değildir; uygulama yönetir.
+- `source_snapshot_json`, yanıtta kullanılan kaynakların türünü, alanını, başlığını, kaynak adını, URL'sini ve yazar/lisans bilgisini saklar. Kaynak kayıt sonradan değişse veya aramadan çıkarılsa da eski yanıtın hangi kaynağa dayandığı görülebilir. Kaynak metni, ham veri veya gizli bilgi kopyalanmaz.
+- Soru, yanıt ve kaynak görüntüsü tek MSSQL transaction'ında yazılır. Model çağrısı bu transaction'ın dışındadır.
 
 ## 5. Gereksinimlerle eşleme
 
@@ -208,10 +236,25 @@ Bu diyagramdaki tipler okunabilirlik için kavramsal kısa adlarla gösterilir. 
 
 Admin panelinde puanların özeti kullanıcı geri bildirimi olarak gösterilir. Örneğin olumlu puan oranı, puan veren kullanıcılar arasındaki orandır; tek başına teknik doğruluk oranı veya sorunun çözüldüğü anlamına gelmez. Teknik başarı ayrıca proje test raporuyla ölçülecek.
 
-## 6. Şu anki örneğin yerleşimi
+## 6. Güncel yerleşim (26 Kasım 2026)
 
-PostgreSQL'de Mendeley kaynaklı 20 onaylı ve aramaya hazır ticket ile 20 chunk bulunur. `1005127.0` gibi özgün kimlikler `source_record_id` alanında korunur; her kısa ticketın problem ve çözümü tek arama chunk'ında birlikte tutulur. API soruları bu kayıtları pgvector üzerinden arar. Çoklu chunk ve uzun belge kullanımı henüz sınanmadı.
+**PostgreSQL** (Docker, `pgvector/pgvector:pg16`, yalnız `127.0.0.1:5432`): 458 kayıt ve 458 chunk vardır; hepsi `approved/ready` durumunda ve `@cf/baai/bge-m3` vektörlüdür. Kayıt dağılımı:
 
-MSSQL tabloları 22 Ekim'de Windows üzerinde doğrudan çalışan SQL Server 2022 Express (`.\SQLEXPRESS`) içindeki `ServisMasasiApp` veritabanında oluşturuldu. Veri ve günlük dosyaları `D:\SQLServer2022` altındadır. Geçici kullanıcı/sohbet/mesaj/puan/log kayıtlarıyla ilişki ve varsayılan değer testi yapılıp işlem geri alındı; beş tablo boş bırakıldı. Kullanıcı/sohbet/mesaj veri erişim katmanı hazırdır ve altı entegrasyon testi geçti. Kullanıcı yetkilendirmesi ve sohbet geçmişinin API'ye bağlanması sonraki işlerdir. Windows/Oracle uzmanlık modu API'de seçilebilir; iki seçilmiş gerçek API kontrolü geçti, geniş uzmanlık değerlendirmesi sonraki iştir. Sohbet geçmişi henüz bağlı olmadığı için mod seçimi otomatik olarak MSSQL'e kaydedilmez. Katmanın kullanımı [mssql/README.md](../mssql/README.md) içindedir.
+| `domain` | `record_type` | Kayıt |
+|---|---|---|
+| `general_it` | `ticket` | 191 |
+| `windows_server` | `qa` | 156 |
+| `windows_server` | `documentation` | 5 |
+| `oracle_db` | `qa` | 99 |
+| `oracle_db` | `documentation` | 7 |
 
-Çalışan arama akışı: [RAG_Akisi.md](RAG_Akisi.md).
+`1005127.0` gibi özgün kimlikler `source_record_id` alanında korunur. Her kayıt tek arama chunk'ıdır; çoklu chunk desteği şemada vardır ama kullanılmıyor (gerekçe: [RAG_Akisi.md](RAG_Akisi.md), Bölüm 1).
+
+**SQL Server 2022 Express** (`.\SQLEXPRESS`, veritabanı `ServisMasasiApp`, karşılaştırma kuralı `Turkish_CI_AS`, AUTO_CLOSE kapalı): Veritabanı 26 Kasım'da yeni Windows kurulumunda `mssql/schema.sql` ile yeniden kuruldu. Veri dosyaları sunucunun D: sürücüsündeki varsayılan klasöründedir. Gerçek SQL üzerinde 88 entegrasyon testi ve 6 veri erişim testi geçti; test kayıtları geri alındı. Tablolar şu işlevlerle kullanılır:
+- Kayıt/giriş: `users`
+- Kalıcı sohbet: `chat_sessions`, `chat_messages`
+- Yanıt puanlama: `feedback`
+- Uygulama günlüğü: `app_logs`
+- Admin raporu: bu tabloların hepsinden okur.
+
+Katmanın kullanımı [mssql/README.md](../mssql/README.md) içindedir.
