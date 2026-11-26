@@ -2,7 +2,7 @@
 
 Teknik destek sorularına geçmiş ticket kayıtlarını kaynak göstererek Türkçe yanıt üreten bir staj projesidir. RAG (Retrieval-Augmented Generation) yaklaşımıyla soru önce bilgi tabanında aranır; bulunan kayıtlar dil modeline bağlam olarak verilir. Kaynaklar üzerinde model eğitimi yapılmaz.
 
-Bu README en son 26 Kasım 2026'da güncellenmiştir. Uygulama Windows üzerinde yerel olarak çalışır: FastAPI servisi ve Streamlit web arayüzü `127.0.0.1` üzerinde açılır.
+Uygulama Windows üzerinde yerel olarak çalışır: FastAPI servisi ve Streamlit web arayüzü `127.0.0.1` üzerinde açılır.
 
 ## Mevcut durum
 
@@ -18,7 +18,7 @@ Bu README en son 26 Kasım 2026'da güncellenmiştir. Uygulama Windows üzerinde
 | Uygulama veritabanı (SQL Server) | Kullanıcılar, kalıcı sohbetler, puanlar, uygulama günlükleri |
 | Test | 23 soruluk V3 testi: [Test raporu](docs/TEST_RAPORU.md) |
 
-**Bilgi tabanı (26 Kasım):**
+**Bilgi tabanı:**
 - 191 Mendeley servis masası ticket'ı
 - 156 Windows Server ve 99 Oracle soru–cevabı (Server Fault / DBA Stack Exchange)
 - 5 Microsoft ve 7 Oracle resmî rehber kaydı
@@ -181,7 +181,7 @@ MSSQL bağlantısı PostgreSQL'den bağımsız `MSSQL_CONNECTION_STRING` ayarın
 
 ## Test ve değerlendirme
 
-**Resmî test raporu (26 Kasım 2026):** 10 servis masası, 5 Windows Server, 5 Oracle optimizasyon ve 3 kaynak dışı soru arayüzle aynı akıştan (`/chats/{id}/ask`) çalıştırıldı. 20 ilgili sorunun hepsinde beklenen kaynak ilk sırada bulunup kullanıldı; 3 kaynak dışı soruda yanıt uydurulmadı. Set 3 kez çalıştırıldı (69 yanıt); arama ve kullanılan kaynaklar üçünde de aynıydı. Elle incelemede çalıştırmalar 22/23/22 uygun yanıt verdi; kısmen uygun yanıt iki çalıştırmada da SD03'tü (kayıttaki bir öneriyi yapılan işlemle birleştirme). Ortalama süre 8,9 saniye; gecikmenin tamamı model aşamasında. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir; komutlar gerçek ortamda çalıştırılmadı. Ayrıntılar ve sınırlılıklar: [Test raporu](docs/TEST_RAPORU.md).
+**Resmî test raporu:** 10 servis masası, 5 Windows Server, 5 Oracle optimizasyon ve 3 kaynak dışı soru arayüzle aynı akıştan (`/chats/{id}/ask`) çalıştırıldı. 20 ilgili sorunun hepsinde beklenen kaynak ilk sırada bulunup kullanıldı; 3 kaynak dışı soruda yanıt uydurulmadı. Set 3 kez çalıştırıldı (69 yanıt); arama ve kullanılan kaynaklar üçünde de aynıydı. Elle incelemede çalıştırmalar 22/23/22 uygun yanıt verdi; kısmen uygun yanıt iki çalıştırmada da SD03'tü (kayıttaki bir öneriyi yapılan işlemle birleştirme). Ortalama süre 8,9 saniye; gecikmenin tamamı model aşamasında. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir; komutlar gerçek ortamda çalıştırılmadı. Ayrıntılar ve sınırlılıklar: [Test raporu](docs/TEST_RAPORU.md).
 
 ```powershell
 .\.venv\Scripts\python.exe evaluate_api.py --questions evaluation\evaluation_questions_v3.json --output-dir outputs_local\evaluation_set_v3\runs
@@ -233,13 +233,13 @@ Bu komut varsayılan V1 sorularıyla bulut çağrıları yapar ve sonuçları `o
 
 `--output-dir` ile farklı sonuç klasörü seçilebilir. Her soru sonucu hemen kaydedilir; ayrı metadata dosyası soru ve değerlendirme aracı hashlerini, çalıştırma durumunu ve özet ölçümleri saklar. Kaynağa bağlılık ayrıca elle incelenmelidir.
 
-5 Kasım'daki V2 çalıştırmasında 8 ilgili sorunun beklenen kaynağı ilk sırada bulundu; 2 kaynak dışı soruda sistem yanıt uydurmadı. Ortalama süre 9,324 saniyeydi. Elle incelemede 9 yanıt kaynakla uyumlu, 1 yanıt kaynakta doğrulanmayan küçük bir ek ihtimal nedeniyle kısmen uygun bulundu. Bazı kısa yanıtlarda rehberin ek ayrıntıları eksiktir. Bu 10 soru bütün bilgi tabanının doğruluğunu kanıtlamaz. Ayrıntılar: [V2 değerlendirme sonucu](docs/DEGERLENDIRME_V2_SONUCU.md).
+Önceki V2 çalıştırmasında (191 ticket) 8 ilgili sorunun beklenen kaynağı ilk sırada bulundu; 2 kaynak dışı soruda sistem yanıt uydurmadı. Ortalama süre 9,324 saniyeydi. Elle incelemede 9 yanıt kaynakla uyumlu, 1 yanıt kaynakta doğrulanmayan küçük bir ek ihtimal nedeniyle kısmen uygun bulundu. Bazı kısa yanıtlarda rehberin ek ayrıntıları eksiktir. Bu 10 soru bütün bilgi tabanının doğruluğunu kanıtlamaz. Ayrıntılar: [V2 değerlendirme sonucu](docs/DEGERLENDIRME_V2_SONUCU.md).
 
 Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sürümünde güçlendirildi. Aynı DNS sorusunun iki tekrarı ve bir UAT kontrolünde yorum taşması görülmedi; dokuz yerel RAG/prompt testi geçti. Bu hedefli kontrol tam V2 tekrarına eşdeğer değildir. Ayrıntılar: [Prompt takip düzeltmesi](docs/PROMPT_YORUM_TASMASI_DUZELTMESI.md).
 
-9 Ekim'de belgelenmiş önceki değerlendirmede 8 ilgili sorunun beklenen kaynağı ilk sırada bulunmuş, 2 kaynak dışı soru için doğru çekimserlik gözlenmiş ve ortalama süre yaklaşık 10,1 saniye olmuştur. Bunlar mevcut sürüm için yeniden ölçülmüş sonuçlar değildir. Ayrıntılar: [Pilot API ve değerlendirme](docs/PILOT_API_VE_DEGERLENDIRME.md).
+İlk pilot değerlendirmesinde (20 ticket) 8 ilgili sorunun beklenen kaynağı ilk sırada bulunmuş, 2 kaynak dışı soru için doğru çekimserlik gözlenmiş ve ortalama süre yaklaşık 10,1 saniye olmuştur. Bunlar mevcut sürüm için yeniden ölçülmüş sonuçlar değildir. Ayrıntılar: [Pilot API ve değerlendirme](docs/PILOT_API_VE_DEGERLENDIRME.md).
 
-6 Kasım’daki ilk uzmanlık aktarımında 15 yerel test ve 3 hedefli canlı API kontrolü geçti. İkinci aktarımda 26 yeni kaydın hazır durumu, tüm eski 198 kayıt/chunk’ın değişmediği ve iki doğal dil aramasında beklenen kaynağın ilk sırada bulunduğu doğrulandı; bu turda yeni yanıt üretimi ölçülmedi. Tam V2 seti yeniden çalıştırılmadı; ayrıntılar [uzmanlık kaynakları belgesinde](docs/UZMANLIK_VERILERININ_KULLANIMI.md).
+İlk uzmanlık aktarımında 15 yerel test ve 3 hedefli canlı API kontrolü geçti. İkinci aktarımda 26 yeni kaydın hazır durumu, tüm eski 198 kayıt/chunk’ın değişmediği ve iki doğal dil aramasında beklenen kaynağın ilk sırada bulunduğu doğrulandı; bu turda yeni yanıt üretimi ölçülmedi. Tam V2 seti yeniden çalıştırılmadı; ayrıntılar [uzmanlık kaynakları belgesinde](docs/UZMANLIK_VERILERININ_KULLANIMI.md).
 
 ## Kod haritası
 
@@ -272,7 +272,7 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 
 ## Diğer belgeler
 
-- [Test raporu (V3, 26 Kasım 2026)](docs/TEST_RAPORU.md)
+- [Test raporu (V3)](docs/TEST_RAPORU.md)
 - [Uygulama mimarisi](docs/MIMARI.md)
 - [PostgreSQL kurulumu](docs/DATABASE.md)
 - [RAG akışı](docs/RAG_Akisi.md)
@@ -284,7 +284,7 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 Tasarım belgelerindeki planlar tamamlanmış özellikler olarak değerlendirilmemelidir. Ham veriler, yerel çıktı dosyaları ve kimlik bilgileri depodan ayrı tutulur.
 
 
-## Kullanıcı kaydı (6 Kasım 2026)
+## Kullanıcı kaydı
 
 `POST /auth/register` JSON olarak `email` ve `password` alır. E-posta biçimi
 kontrol edilir (adresin sahipliği veya teslim edilebilirliği doğrulanmaz).
@@ -303,11 +303,11 @@ Kayıt akışına ek olarak giriş/JWT, `/ask` koruması ve Streamlit arayüzü 
 Kod ve testlerdeki parolalar örnektir, gerçek hesap bilgisi kullanılmamalıdır.
 
 
-### 6 Kasım yerel bağlantı doğrulaması
+### Yerel bağlantı doğrulaması
 
-Bu tarihteki yerel SQL bağlantısı ODBC Driver 18 kullanıyordu. SQL Express yeniden başlatıldıktan sonra gerçek SQL üzerinde sohbet sahipliği, sayfalama ve kaynak okuma testi geçti; geçici kayıtlar geri alındı. Bu kontrol canlı LLM çağrısı içermez. Güncel sürücü seçimi için aşağıdaki "Yerel SQL bağlantısı: ODBC 17" bölümüne bak.
+Gerçek SQL üzerinde sohbet sahipliği, sayfalama ve kaynak okuma testleri geçmiştir; geçici kayıtlar geri alınır. Bu kontrol canlı LLM çağrısı içermez. Sürücü seçimi için aşağıdaki "Yerel SQL bağlantısı: ODBC 17" bölümüne bak.
 
-## Giriş ve oturum (6 Kasım 2026)
+## Giriş ve oturum
 
 API'yi proje kökünden `./start_api.ps1` ile başlat. Bu komut dosyası `.env`
 içindeki `JWT_SECRET_KEY`, `MSSQL_CONNECTION_STRING`, varsa `DATABASE_URL`
@@ -335,7 +335,7 @@ giriş denemelerine hız sınırı henüz eklenmedi.
 Önceki girişsiz `/ask` örnekleri artık `401` döndürür. Değerlendirme aracını
 kullanırken girişten alınan tokenı `APP_ACCESS_TOKEN` ortam değişkenine koy;
 araç tokenı sonuç dosyalarına kaydetmez. Canlı RAG için ayrıca PostgreSQL ve
-model erişim ayarlarının hazır olması gerekir. Kalıcı sohbet için aşağıdaki 12 Kasım güncellemesine bak.
+model erişim ayarlarının hazır olması gerekir. Kalıcı sohbet için aşağıdaki "Kalıcı sohbet bağlantısı" bölümüne bak.
 
 
 ## Streamlit web arayüzü
@@ -410,10 +410,10 @@ Yanıt doğrulama mesajları parola giriş değerini içermez.
 ### Giriş ve kayıt ekranı
 
 `auth_frontend/index.html`, Streamlit giriş ekranının yerel bileşenidir; uygulamayla birlikte tutulmalıdır. Ek paket veya derleme gerektirmez. Alan uyarıları tarayıcıda güncellenir: dokunulmamış alanlarda erken hata gösterilmez, parola gereksinimleri yazarken güncellenir, eşleşme uyarısı tekrar alanıyla etkileşimden sonra gösterilir. Gönderimde bütün alanlar tekrar kontrol edilir. Sunucu tarafındaki doğrulama kuralları da uygulanır. Başarılı kayıttan sonra parola alanları temizlenir ve giriş ekranı açılır. Token yalnız Python tarafındaki kullanıcı oturumunda tutulur; tarayıcı bileşenine aktarılmaz.
-E-posta uzantısı doğrulaması `email_domains.py` ve `auth_frontend/tlds.json` dosyalarındaki IANA listesiyle hem formda hem kayıt API'sinde uygulanır. Liste kaynağı: https://data.iana.org/TLD/tlds-alpha-by-domain.txt (6 Kasım 2026). Yeni uzantılar eklendiğinde liste güncellenip uygulama yeniden başlatılmalıdır. Çalışma sırasında internet bağlantısı gerektirmez. Bu kontrol alan adı uzantısını doğrular; alan adının posta kabul etmesini veya posta kutusunun varlığını kanıtlamaz.
+E-posta uzantısı doğrulaması `email_domains.py` ve `auth_frontend/tlds.json` dosyalarındaki IANA listesiyle hem formda hem kayıt API'sinde uygulanır. Liste kaynağı: https://data.iana.org/TLD/tlds-alpha-by-domain.txt. Yeni uzantılar eklendiğinde liste güncellenip uygulama yeniden başlatılmalıdır. Çalışma sırasında internet bağlantısı gerektirmez. Bu kontrol alan adı uzantısını doğrular; alan adının posta kabul etmesini veya posta kutusunun varlığını kanıtlamaz.
 ### Yerel SQL bağlantısı: ODBC 17
 
-Güncel `.env.example` ve `mssql/verify_*.ps1` betikleri Microsoft ODBC Driver 17 kullanır (26 Kasım 2026'da yeni Windows kurulumunda yalnız 17 kurulu olduğu için 18'den geri dönüldü). Bağlantı satırı `Encrypt=Yes` değerini açıkça verdiğinden davranış 18 ile aynıdır; 18 kurulursa yalnız `Driver=` adının değiştirilmesi yeterlidir. `TrustServerCertificate=Yes` bu bilgisayardaki yerel SQL Express sertifikası içindir. SQL Server 17300 hatası verdiğinde kullanılabilir RAM ve sunucu günlüğü kontrol edilmelidir; hizmetin çalışması bağlantı kabul edebildiğini garanti etmez. Bellek baskısı giderilip hizmet yeniden başlatıldıktan sonra bağlantı doğrulandı.
+Güncel `.env.example` ve `mssql/verify_*.ps1` betikleri Microsoft ODBC Driver 17 kullanır (yeni Windows kurulumunda yalnız 17 kurulu olduğu için 18'den geri dönüldü). Bağlantı satırı `Encrypt=Yes` değerini açıkça verdiğinden davranış 18 ile aynıdır; 18 kurulursa yalnız `Driver=` adının değiştirilmesi yeterlidir. `TrustServerCertificate=Yes` bu bilgisayardaki yerel SQL Express sertifikası içindir. SQL Server 17300 hatası verdiğinde kullanılabilir RAM ve sunucu günlüğü kontrol edilmelidir; hizmetin çalışması bağlantı kabul edebildiğini garanti etmez. Bellek baskısı giderilip hizmet yeniden başlatıldıktan sonra bağlantı doğrulandı.
 
 API yeniden başlatılırken terminalde eski bağlantı değişkeni bulunuyorsa önce `Remove-Item Env:MSSQL_CONNECTION_STRING -ErrorAction SilentlyContinue` çalıştırılmalıdır. Böylece `start_api.ps1`, güncel bağlantıyı yerel `.env` dosyasından yükler.
 ### Oturum içi sohbet bağlamı
@@ -443,11 +443,11 @@ Tüm uçlar Bearer oturumu ister; kullanıcı kimliği yalnız JWT doğrulaması
 
 Başkasının sohbeti ve bulunmayan sohbet aynı `404` yanıtını döndürür. Veritabanı hataları bağlantı ayrıntıları sızdırılmadan `503` olur. Oluşturma işlemi transaction ile tamamlanır; hata durumunda geri alınır. Başlangıç SQL şeması yeniden çalıştırılmaz.
 
-Bu temel, 12 Kasım güncellemesinde Streamlit ekranına ve kalıcı soru–yanıt yazımına bağlandı. Bağımsız `/ask` uyumluluk amacıyla kalır ve kayıt yapmaz; arayüz `/chats/{chat_id}/ask` kullanır.
+Bu temel, Streamlit ekranına ve kalıcı soru–yanıt yazımına bağlandı. Bağımsız `/ask` uyumluluk amacıyla kalır ve kayıt yapmaz; arayüz `/chats/{chat_id}/ask` kullanır.
 
-`tests/test_chat_history.py` kimlik, doğrulama ve sorgu parametrelerini sahte bağlantıyla sınar. `CHAT_HISTORY_SQL_TEST=1` açıkça verilirse ek test gerçek yerel SQL bağlantısını kullanır; tüm test kayıtları aynı transaction içinde kalır ve sonunda rollback yapılır. Gerçek SQL testi ilk denemede bağlantı zaman aşımına uğradı. Windows yeniden başlatılıp SQL Express başlatıldıktan sonra 6 Kasım 2026 tarihinde gerçek SQL üzerinde sahiplik, sayfalama ve kaynak okuma testi başarıyla tamamlandı; geçici kayıtlar rollback ile geri alındı. Kontrolde min server memory 16 MB, max server memory 1410 MB olarak okundu; bu ayarlar değiştirilmedi.
+`tests/test_chat_history.py` kimlik, doğrulama ve sorgu parametrelerini sahte bağlantıyla sınar. `CHAT_HISTORY_SQL_TEST=1` açıkça verilirse ek test gerçek yerel SQL bağlantısını kullanır; tüm test kayıtları aynı transaction içinde kalır ve sonunda rollback yapılır. Gerçek SQL testi ilk denemede bağlantı zaman aşımına uğradı. Windows yeniden başlatılıp SQL Express başlatıldıktan sonra gerçek SQL üzerinde sahiplik, sayfalama ve kaynak okuma testi başarıyla tamamlandı; geçici kayıtlar rollback ile geri alındı. Kontrolde min server memory 16 MB, max server memory 1410 MB olarak okundu; bu ayarlar değiştirilmedi.
 
-### Kalıcı sohbet bağlantısı (12 Kasım 2026)
+### Kalıcı sohbet bağlantısı
 
 - Mevcut veritabanında bir kez `python -m mssql.upgrade_chat_persistence` çalıştırılır. `MSSQL_CONNECTION_STRING` önceden ayarlanmalıdır. Bu işlem yalnız nullable `response_json` alanını ekler; eski kayıtları silmez. Yeni kurulumda güncel `schema.sql` kullanılır.
 - `POST /chats/{chat_id}/ask` yalnız `question` ve UUID `request_id` alır. Mod ve sınırlı geçmiş JWT sahibinin veritabanındaki sohbetinden okunur; istemci geçmiş veya kullanıcı kimliği gönderemez.
@@ -457,7 +457,7 @@ Bu temel, 12 Kasım güncellemesinde Streamlit ekranına ve kalıcı soru–yan�
 - Solda kayıtlı sohbetler ve devam sayfaları bulunur. Sohbet seçilince mesajlar ve kaynakları yüklenir; yeni sorular aynı sohbet altında sürer. Yeni sohbet eski veriyi silmez. Sayfa yenilenince tekrar giriş gerekebilir; giriş sonrası sohbet listesi geri gelir. Önceki sürümün yalnız bellekteki mesajları geriye dönük kurtarılamaz.
 - `tests/test_saved_chat.py` sunucu kaynaklı bağlamı, sahipliği, rollback/tekrar denemeyi ve arayüzde geçmişi yeniden açmayı sınar. `CHAT_HISTORY_SQL_TEST=1` gerçek SQL kontrollerini de etkinleştirir; test kayıtları rollback ile kaldırılır. Testlerde bulut model çağrısı yapılmaz.
 
-### Yanıt değerlendirme (12 Kasım 2026)
+### Yanıt değerlendirme
 
 Kaydedilmiş her yanıtın ardından ayrı bir arayüz mesajında “Bu yanıtı değerlendirmek ister misiniz?” daveti ve “Değerlendir / Şimdi değil” düğmeleri gösterilir. Davet model bağlamına veya sohbet mesajları tablosuna eklenmez. Değerlendir düğmesi açılır pencereyi açar: 1–5 arasında puan zorunlu, en fazla 2000 karakter yorum isteğe bağlıdır. Kullanıcı pencereyi kapatarak vazgeçebilir. Şimdi değil seçimi mevcut oturumda daveti gizler; sohbet yeniden açıldığında puanlanmamış yanıt tekrar değerlendirilebilir.
 
@@ -466,12 +466,12 @@ Kaydedilmiş her yanıtın ardından ayrı bir arayüz mesajında “Bu yanıtı
 API güncellendikten sonra yeniden başlatılmalıdır. `tests/test_feedback.py` yetki, doğrulama, tek kayıt güncelleme, açılır pencere ve hata sonrası açık tekrar denemeyi sınar. `CHAT_HISTORY_SQL_TEST=1` gerçek SQL testini de çalıştırır; örnek veriler rollback ile geri alınır. Bulut modeli çağrılmaz.
 
 
-### İlk resmî rehberler (12 Kasım 2026)
+### İlk resmî rehberler
 
-Windows AD çoğaltma raporu ve Oracle 19c tahmini SQL planı rehberleri eklendi; toplam bilgi tabanı 448 kayıt/chunk. Aktarım, kaynaklı yanıt, kullanıcı kontrolleri ve açık zaman aşımı sorunu [rehber test raporunda](docs/REHBER_TEST_SONUCLARI_20261112.md) ayrı gösterilir. Komutlar gerçek AD/Oracle ortamında çalıştırılmadı.
+Windows AD çoğaltma raporu ve Oracle 19c tahmini SQL planı rehberleri eklendi. Aktarım, kaynaklı yanıt, kullanıcı kontrolleri ve açık zaman aşımı sorunu [rehber test raporunda](docs/REHBER_TEST_SONUCLARI_20261112.md) ayrı gösterilir. Komutlar gerçek AD/Oracle ortamında çalıştırılmadı.
 
 
-### Admin raporlama paneli (12 Kasım 2026)
+### Admin raporlama paneli
 
 Yönetici rolündeki kullanıcılar Streamlit kenar çubuğunda **Yönetim paneli** düğmesini görür. Panel `GET /admin/report?days=30&top=10` ucunu kullanır; uç `403` ile yalnız `role=admin` kullanıcılara açıktır (rol her istekte MSSQL kaydından okunur, JWT'den değil). Panel: soru/sohbet/kullanıcı sayıları, ortalama yanıt süresi, **en çok sorulan sorular**, puan dağılımı, uzmanlık alanına ve güne göre soru sayısı.
 
@@ -487,7 +487,7 @@ Yönetici atamak için (API yeniden başlatılması gerekmez; `MSSQL_CONNECTION_
 `tests/test_admin.py` yetki, hesaplama ve arayüz görünürlüğünü sınar; `ADMIN_REPORT_SQL_TEST=1` gerçek SQL üzerinde, rollback'li bir kontrol de çalıştırır.
 
 
-### Bilgi Merkezi yönetimi (12 Kasım 2026)
+### Bilgi Merkezi yönetimi
 
 Yönetim panelindeki **Bilgi Merkezi** bölümü yalnızca yönetici rolüne açıktır (`/admin/kb/*` uçları `403` döner). Nedeni: bilgi tabanı doğrudan modele bağlam olarak gittiği için içerik kontrollü eklenmelidir (veri zehirleme ve telif riski).
 
@@ -501,7 +501,7 @@ Yönetim panelindeki **Bilgi Merkezi** bölümü yalnızca yönetici rolüne aç
 **Yükleme sınırları ve toplu onay:** Varsayılan sınırlar küçüktür (1.000.000 karakter, 500 satır). Büyük dosya gerekirse API ve Streamlit süreçlerinin ikisinde de `KB_MAX_UPLOAD_CHARS` (en çok 20.000.000) ve `KB_MAX_ROWS` (en çok 20.000) ortam değişkenlerini tanımlayıp yeniden başlat; geçersiz değer varsayılana döner. Onay bekleyen kayıtlar için sayfadaki hepsini 10'arlı gruplar halinde onaylayan düğme vardır; her kayıt için Cloudflare embedding isteği gittiğinden çok sayıda kayıt zaman alır.
 
 
-### Uygulama günlüğü ve Günlükler ekranı (12 Kasım 2026)
+### Uygulama günlüğü ve Günlükler ekranı
 
 Olaylar MSSQL `app_logs` tablosuna yazılır. Yazma arka plandaki bir iş parçacığında, kısa bir transaction ile yapılır; istek beklemez ve yazma başarısız olursa istek bozulmaz. Her isteğe bir **korelasyon kimliği** verilir (`X-Request-ID` yanıt başlığı); aynı isteğin olayları bu kimlikle bulunur.
 
@@ -514,7 +514,7 @@ Olaylar MSSQL `app_logs` tablosuna yazılır. Yazma arka plandaki bir iş parça
 
 `tests/test_app_logs.py` maskeleme, bloklamama, olay noktalarını (soru/yanıt metni yazılmadığını dahil), yönetici yetkisini ve arayüzü sınar; `APP_LOG_SQL_TEST=1` gerçek SQL'de geri alınan yazma/okuma/süzme testini de çalıştırır.
 
-### SQL Server bağlantı yavaşlığı: AUTO_CLOSE ve bellek (12 Kasım 2026)
+### SQL Server bağlantı yavaşlığı: AUTO_CLOSE ve bellek
 
 Girişte "Hesap hizmetine ulaşılamıyor (503)" hatası, SQL Server'ın bağlantıya geç yanıt vermesinden (zaman aşımı 258) kaynaklandı. Kontrolde `ServisMasasiApp` veritabanında **AUTO_CLOSE açıktı** (boşta kapanıp bağlantıda yeniden açılır) ve SQL Server fiziksel belleğin az olduğunu bildiriyordu (`process_physical_memory_low`; 8 GB bilgisayarda boş RAM ~800 MB). Veritabanı için şu ayar kapatıldı (veri değişmedi):
 
@@ -525,7 +525,7 @@ ALTER DATABASE ServisMasasiApp SET AUTO_CLOSE OFF;
 Yeni kurulumda bu ayar ayrıca kontrol edilmelidir (`SELECT name, is_auto_close_on FROM sys.databases`). Uygulama tarafında MSSQL giriş süresi 15 saniyeye çıkarıldı ve zaman aşımında bir kez yeniden denenir (`MSSQL_LOGIN_TIMEOUT`, 1–60). Bellek baskısı sürerse `min server memory` ayarı değerlendirilebilir; bu ayar değiştirilmedi.
 
 
-### Asenkron mimari (12 Kasım 2026)
+### Asenkron mimari
 
 Bütün HTTP uçları ve kimlik dependency'leri `async def`'tir (`/health` canlılık ucu dahil). Kurallar [async_utils.py](async_utils.py) içindedir:
 
