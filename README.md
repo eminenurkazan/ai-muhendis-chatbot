@@ -168,6 +168,14 @@ MSSQL bağlantısı PostgreSQL'den bağımsız `MSSQL_CONNECTION_STRING` ayarın
 
 ## Test ve değerlendirme
 
+**Resmî test raporu (26 Kasım 2026):** 10 servis masası, 5 Windows Server, 5 Oracle optimizasyon ve 3 kaynak dışı soru arayüzle aynı akıştan (`/chats/{id}/ask`) çalıştırıldı. 20 ilgili sorunun hepsinde beklenen kaynak ilk sırada bulunup kullanıldı; 3 kaynak dışı soruda yanıt uydurulmadı; ortalama süre 8,2 saniye. Elle incelemede 20 yanıt kaynakla uyumlu, 3 servis masası yanıtı kaynakta olmayan küçük bir "geçici çözüm" nitelendirmesi nedeniyle kısmen uygun bulundu. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir; komutlar gerçek ortamda çalıştırılmadı. Ayrıntılar ve sınırlılıklar: [Test raporu](docs/TEST_RAPORU.md).
+
+```powershell
+.\.venv\Scripts\python.exe evaluate_api.py --questions evaluation\evaluation_questions_v3.json --output-dir outputs_local\evaluation_set_v3\runs
+```
+
+V3 seti her soruyu kendi uzmanlık moduyla, varsayılan olarak kalıcı sohbet akışından sorar (`--flow direct` kayıt yapmayan `/ask` ucunu kullanır); bir soru hata verirse kaydedip sonraki soruya geçer.
+
 Bulut çağrısı yapmadan otomatik testleri çalıştır:
 
 ```powershell
@@ -229,6 +237,7 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 
 ## Diğer belgeler
 
+- [Test raporu (V3, 26 Kasım 2026)](docs/TEST_RAPORU.md)
 - [PostgreSQL kurulumu](docs/DATABASE.md)
 - [RAG akışı](docs/RAG_Akisi.md)
 - [ER taslağı](docs/ER_Taslagi.md)
