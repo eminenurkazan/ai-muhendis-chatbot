@@ -31,6 +31,7 @@ Teslim belgeleri:
 - [RAG akış diyagramı](docs/RAG_Akisi.md)
 - [ER diyagramı](docs/ER_Taslagi.md)
 - [Model seçimi ve gerekçeleri](docs/Model_Secimi.md)
+- [Uygulama mimarisi (katmanlar)](docs/MIMARI.md)
 - [Test raporu](docs/TEST_RAPORU.md)
 
 ## Nasıl çalışır?
@@ -194,7 +195,23 @@ Bulut çağrısı yapmadan otomatik testleri çalıştır:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Bu README hazırlanırken depodaki testlerde **9 test geçti, 6 MSSQL entegrasyon testi bağlantı ayarı olmadığı için atlandı**. Bu kontrol canlı model yanıtlarını veya yerel veritabanlarının durumunu doğrulamaz. MSSQL testleri, `MSSQL_TEST_CONNECTION_STRING` tanımlandığında gerçek uygulama veritabanında çalışır; örnek kayıtlar geri alınır.
+Depoda 195 birim testi vardır. Gerçek veritabanı gerektiren testler, aşağıdaki ortam değişkenleri verilmedikçe atlanır:
+- `MSSQL_TEST_CONNECTION_STRING`
+- `CHAT_HISTORY_SQL_TEST=1`
+- `ADMIN_REPORT_SQL_TEST=1`
+- `APP_LOG_SQL_TEST=1`
+- `KB_SQL_TEST=1`
+- `SYNC_SQL_TEST=1`
+
+Bu testler örnek kayıtlarını transaction içinde oluşturup sonunda geri alır. Birim testleri canlı model yanıtlarını doğrulamaz.
+
+**Bilgi tabanı senkronizasyon kontrolü.** Kayıt–vektör tutarlılığını ve MSSQL sohbet atıflarını salt okunur olarak denetler:
+
+```powershell
+.\.venv\Scripts\python.exe -m database.check_sync --mssql
+```
+
+Hangi tutarsızlıkların arandığı [RAG akışı belgesinde](docs/RAG_Akisi.md) listelenir. `DATABASE_URL` ve `--mssql` için `MSSQL_CONNECTION_STRING` tanımlı olmalıdır.
 
 API açık ve hesap erişimleri hazırken 10 soruluk canlı değerlendirme:
 
@@ -250,6 +267,7 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 ## Diğer belgeler
 
 - [Test raporu (V3, 26 Kasım 2026)](docs/TEST_RAPORU.md)
+- [Uygulama mimarisi](docs/MIMARI.md)
 - [PostgreSQL kurulumu](docs/DATABASE.md)
 - [RAG akışı](docs/RAG_Akisi.md)
 - [ER taslağı](docs/ER_Taslagi.md)

@@ -68,6 +68,27 @@ Kayıt metni (`knowledge_records`) ve vektörü (`knowledge_chunks`) aynı Postg
 4. Chunk'lar kayda `ON DELETE CASCADE` ile bağlıdır. Kayıtlar fiziksel olarak silinmez, `excluded` yapılır.
 5. MSSQL'deki sohbet mesajları PostgreSQL kayıtlarına FK ile bağlanmaz. Yanıtta kullanılan kaynakların kimlikleri (`citations_json`) ile başlık, URL, yazar ve lisans bilgileri (`source_snapshot_json`) mesajla birlikte saklanır. Böylece kaynak sonradan değişse de eski yanıtın hangi kaynağa dayandığı görülebilir.
 
+Bu kurallar kopuk bir kaydın yanlış yanıta yol açmasını önler; kopuk kayıt aramadan sessizce düşer. Sessiz kopuklukları görünür kılmak için salt okunur bir kontrol vardır:
+
+```powershell
+.\.venv\Scripts\python.exe -m database.check_sync --mssql
+```
+
+Kontrol şu tutarsızlıkları kayıt kimlikleriyle listeler:
+
+| Düzey | Kontrol |
+|---|---|
+| Hata | Onaylı/hazır ama chunk'ı olmayan kayıt |
+| Hata | Vektörü kaydın güncel içeriğiyle eşleşmeyen kayıt (bayat vektör) |
+| Hata | Farklı embedding modeli veya 1024 dışında boyut |
+| Hata | `chunk_index` boşluğu |
+| Hata | Onaylanmadan `ready` yapılmış kayıt |
+| Bilgi | İndeksi bekleyen onaylı kayıt |
+| Bilgi | Chunk'ı duran devre dışı kayıt |
+| Bilgi | `--mssql` ile: sohbet yanıtlarında atıf yapılmış ama artık aranamayan kaynak |
+
+Hata düzeyinde bulgu varsa çıkış kodu 1'dir; `--json` makine okunur çıktı verir. 26 Kasım 2026'da gerçek veritabanında sonuç: 458/458 kayıt tutarlı ve aranabilir; MSSQL'de atıf yapılan 20 kaynağın hepsi aranabilir.
+
 ## 2. Kullanıcının sorusunu yanıtlama
 
 ```mermaid
