@@ -1,0 +1,10 @@
+# Depoda ve çalışma klasöründe satır sonu LF olsun; core.autocrlf ayarından bağımsız.
+* text=auto eol=lf
+
+# PowerShell betikleri Windows'ta CRLF ile tutulur.
+*.ps1 text eol=crlf
+
+# İkili dosyalar dönüştürülmez.
+*.png binary
+*.jpg binary
+*.pdf binary

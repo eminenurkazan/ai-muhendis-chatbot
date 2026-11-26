@@ -51,7 +51,7 @@ Testler yanlış cevap eşleştirmesini, eksik lisans/yazar bilgisini, kod blokl
 
 ## 6 Kasım 2026: ilk onaylı aktarım
 
-314 adaydan ilk 10 incelendi; 7 sınırlı kapsamda uygun bulundu (4 Windows, 3 Oracle), 3 elendi. Özgün candidates.jsonl pending ve salt okunur kalır. Uygulamaya alınan ayrı incelenmiş kopyalar approved/ready durumundadır. Aktarım aracı `database.import_expertise`, aynı pgvector havuzunu kaynak/alan/atıf bilgileriyle kullanır; ham cevaplar indekslenmez. [Saklama ve arama ayrıntıları](../UZMANLIK_VERILERININ_KULLANIMI.md).
+314 adaydan ilk 10 incelendi; 7 sınırlı kapsamda uygun bulundu (4 Windows, 3 Oracle), 3 elendi. Özgün candidates.jsonl pending ve salt okunur kalır. Uygulamaya alınan ayrı incelenmiş kopyalar approved/ready durumundadır. Aktarım aracı `database.import_expertise`, aynı pgvector havuzunu kaynak/alan/atıf bilgileriyle kullanır; ham cevaplar indekslenmez. [Saklama ve arama ayrıntıları](../docs/UZMANLIK_VERILERININ_KULLANIMI.md).
 
 
 ## 6 Kasım 2026: ikinci aktarım

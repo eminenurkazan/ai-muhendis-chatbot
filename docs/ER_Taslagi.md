@@ -171,7 +171,7 @@ erDiagram
     }
 ```
 
-Bu diyagramdaki tipler okunabilirlik için kavramsal kısa adlarla gösterilir. Uygulanan fiziksel şema [mssql/schema.sql](mssql/schema.sql) dosyasındadır: UUID için `uniqueidentifier`, uzun metin için `nvarchar(max)`, tarih için `datetime2(3)`, boolean için `bit` kullanılır. `email_normalized`, e-postanın baş/son boşlukları çıkarılıp küçük harfe dönüştürülen hesaplanmış alanıdır; benzersizlik bu alan üzerinde sağlanır. Bu alan ve e-posta sorgusu `Latin1_General_100_CI_AS_SC` kuralını kullanır; Türkçe veritabanı ayarının `I/ı` dönüşümünden etkilenmez.
+Bu diyagramdaki tipler okunabilirlik için kavramsal kısa adlarla gösterilir. Uygulanan fiziksel şema [mssql/schema.sql](../mssql/schema.sql) dosyasındadır: UUID için `uniqueidentifier`, uzun metin için `nvarchar(max)`, tarih için `datetime2(3)`, boolean için `bit` kullanılır. `email_normalized`, e-postanın baş/son boşlukları çıkarılıp küçük harfe dönüştürülen hesaplanmış alanıdır; benzersizlik bu alan üzerinde sağlanır. Bu alan ve e-posta sorgusu `Latin1_General_100_CI_AS_SC` kuralını kullanır; Türkçe veritabanı ayarının `I/ı` dönüşümünden etkilenmez.
 
 | Tablo | Amacı |
 |---|---|
@@ -212,6 +212,6 @@ Admin panelinde puanların özeti kullanıcı geri bildirimi olarak gösterilir.
 
 PostgreSQL'de Mendeley kaynaklı 20 onaylı ve aramaya hazır ticket ile 20 chunk bulunur. `1005127.0` gibi özgün kimlikler `source_record_id` alanında korunur; her kısa ticketın problem ve çözümü tek arama chunk'ında birlikte tutulur. API soruları bu kayıtları pgvector üzerinden arar. Çoklu chunk ve uzun belge kullanımı henüz sınanmadı.
 
-MSSQL tabloları 22 Ekim'de Windows üzerinde doğrudan çalışan SQL Server 2022 Express (`.\SQLEXPRESS`) içindeki `ServisMasasiApp` veritabanında oluşturuldu. Veri ve günlük dosyaları `D:\SQLServer2022` altındadır. Geçici kullanıcı/sohbet/mesaj/puan/log kayıtlarıyla ilişki ve varsayılan değer testi yapılıp işlem geri alındı; beş tablo boş bırakıldı. Kullanıcı/sohbet/mesaj veri erişim katmanı hazırdır ve altı entegrasyon testi geçti. Kullanıcı yetkilendirmesi ve sohbet geçmişinin API'ye bağlanması sonraki işlerdir. Windows/Oracle uzmanlık modu API'de seçilebilir; iki seçilmiş gerçek API kontrolü geçti, geniş uzmanlık değerlendirmesi sonraki iştir. Sohbet geçmişi henüz bağlı olmadığı için mod seçimi otomatik olarak MSSQL'e kaydedilmez. Katmanın kullanımı [mssql/README.md](mssql/README.md) içindedir.
+MSSQL tabloları 22 Ekim'de Windows üzerinde doğrudan çalışan SQL Server 2022 Express (`.\SQLEXPRESS`) içindeki `ServisMasasiApp` veritabanında oluşturuldu. Veri ve günlük dosyaları `D:\SQLServer2022` altındadır. Geçici kullanıcı/sohbet/mesaj/puan/log kayıtlarıyla ilişki ve varsayılan değer testi yapılıp işlem geri alındı; beş tablo boş bırakıldı. Kullanıcı/sohbet/mesaj veri erişim katmanı hazırdır ve altı entegrasyon testi geçti. Kullanıcı yetkilendirmesi ve sohbet geçmişinin API'ye bağlanması sonraki işlerdir. Windows/Oracle uzmanlık modu API'de seçilebilir; iki seçilmiş gerçek API kontrolü geçti, geniş uzmanlık değerlendirmesi sonraki iştir. Sohbet geçmişi henüz bağlı olmadığı için mod seçimi otomatik olarak MSSQL'e kaydedilmez. Katmanın kullanımı [mssql/README.md](../mssql/README.md) içindedir.
 
 Çalışan arama akışı: [RAG_Akisi.md](RAG_Akisi.md).

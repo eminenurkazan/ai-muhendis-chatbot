@@ -28,7 +28,7 @@ Tüm seçilen sorular 2018 ve sonrasında açılmıştır. Birden fazla Windows 
 - HTML'deki paragraf ve kod blokları metne çevrildi; ham API yanıtları ayrıca saklandı.
 - 314 kimliğin tamamı benzersizdir. Veri hazırlama kodunun dört çevrimdışı testi geçti.
 
-Kabul edilmiş cevap, teknik doğruluk veya farklı sürümlerde uygulanabilirlik garantisi değildir. Özellikle komut, yetki, veri kaybı/kesinti etkisi, eksik görsel bağlam ve hedef sürüm uygunluğu incelenmelidir. Ayrıntılar [data_sources/README.md](data_sources/README.md) içindedir.
+Kabul edilmiş cevap, teknik doğruluk veya farklı sürümlerde uygulanabilirlik garantisi değildir. Özellikle komut, yetki, veri kaybı/kesinti etkisi, eksik görsel bağlam ve hedef sürüm uygunluğu incelenmelidir. Ayrıntılar [data_sources/README.md](../data_sources/README.md) içindedir.
 
 ## İlk indirme anındaki durum
 

@@ -19,7 +19,7 @@ Bu README, 6 Kasım 2026 tarihinde uzmanlık kaynaklarının ikinci aktarımıyl
 
 **6 Kasım ikinci aktarım kontrolü: 191 Mendeley ticketı + 22 Windows Server ve 11 Oracle soru–cevabı = 224 onaylı/aramaya hazır kayıt ve chunk.** Kaynak türü, alanı, yazar ve ayrı soru/cevap lisansları korunur. QA’ların yalnız incelenmiş açıklama/teşhis özetleri indekslenir; ham cevap kodları modele verilmez. Kayıtlar üzerinde model eğitimi yapılmaz.
 
-314 soru–cevap adayından toplam 40 kayıt incelendi; 33’ü sınırlı açıklama/teşhis kapsamında eklendi, 7’si elendi. Henüz incelenmemiş 274 aday vardır. İkinci partide 30 kaydın 26’sı eklendi; 4’ü dışarıda bırakıldı. Ham veri ve embedding dosyaları yerelde Git dışında tutulur; temiz klon 224 kaydı kendiliğinden oluşturmaz. [Saklama, alan filtreleri ve API kaynak atıfları](UZMANLIK_VERILERININ_KULLANIMI.md).
+314 soru–cevap adayından toplam 40 kayıt incelendi; 33’ü sınırlı açıklama/teşhis kapsamında eklendi, 7’si elendi. Henüz incelenmemiş 274 aday vardır. İkinci partide 30 kaydın 26’sı eklendi; 4’ü dışarıda bırakıldı. Ham veri ve embedding dosyaları yerelde Git dışında tutulur; temiz klon 224 kaydı kendiliğinden oluşturmaz. [Saklama, alan filtreleri ve API kaynak atıfları](docs/UZMANLIK_VERILERININ_KULLANIMI.md).
 
 ## Nasıl çalışır?
 
@@ -79,7 +79,7 @@ CSV dosyaları UTF-8 veya UTF-8 BOM biçiminde olmalıdır. İlk pilot ve ham ve
 ### 3. PostgreSQL şeması
 
 ```powershell
-$env:DATABASE_URL = Read-Host "Yerel PostgreSQL baglanti adresi (DATABASE.md kurulumuna gore)"
+$env:DATABASE_URL = Read-Host "Yerel PostgreSQL baglanti adresi (docs/DATABASE.md kurulumuna gore)"
 docker compose up -d
 .\.venv\Scripts\python.exe -m database.init_schema
 .\.venv\Scripts\python.exe -m database.check_connection
@@ -185,18 +185,18 @@ API açık ve hesap erişimleri hazırken 10 soruluk canlı değerlendirme:
 Bu komut varsayılan V1 sorularıyla bulut çağrıları yapar ve sonuçları `outputs_local/evaluation_results_v1_*.json` dosyasına kaydeder. Yeni 191 ticketlık havuz için hazırlanan V2 setini seçmek için:
 
 ```powershell
-.\.venv\Scripts\python.exe evaluate_api.py --questions evaluation_questions_v2.json
+.\.venv\Scripts\python.exe evaluate_api.py --questions evaluation\evaluation_questions_v2.json
 ```
 
 `--output-dir` ile farklı sonuç klasörü seçilebilir. Her soru sonucu hemen kaydedilir; ayrı metadata dosyası soru ve değerlendirme aracı hashlerini, çalıştırma durumunu ve özet ölçümleri saklar. Kaynağa bağlılık ayrıca elle incelenmelidir.
 
-5 Kasım'daki V2 çalıştırmasında 8 ilgili sorunun beklenen kaynağı ilk sırada bulundu; 2 kaynak dışı soruda sistem yanıt uydurmadı. Ortalama süre 9,324 saniyeydi. Elle incelemede 9 yanıt kaynakla uyumlu, 1 yanıt kaynakta doğrulanmayan küçük bir ek ihtimal nedeniyle kısmen uygun bulundu. Bazı kısa yanıtlarda rehberin ek ayrıntıları eksiktir. Bu 10 soru bütün bilgi tabanının doğruluğunu kanıtlamaz. Ayrıntılar: [V2 değerlendirme sonucu](DEGERLENDIRME_V2_SONUCU.md).
+5 Kasım'daki V2 çalıştırmasında 8 ilgili sorunun beklenen kaynağı ilk sırada bulundu; 2 kaynak dışı soruda sistem yanıt uydurmadı. Ortalama süre 9,324 saniyeydi. Elle incelemede 9 yanıt kaynakla uyumlu, 1 yanıt kaynakta doğrulanmayan küçük bir ek ihtimal nedeniyle kısmen uygun bulundu. Bazı kısa yanıtlarda rehberin ek ayrıntıları eksiktir. Bu 10 soru bütün bilgi tabanının doğruluğunu kanıtlamaz. Ayrıntılar: [V2 değerlendirme sonucu](docs/DEGERLENDIRME_V2_SONUCU.md).
 
-Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sürümünde güçlendirildi. Aynı DNS sorusunun iki tekrarı ve bir UAT kontrolünde yorum taşması görülmedi; dokuz yerel RAG/prompt testi geçti. Bu hedefli kontrol tam V2 tekrarına eşdeğer değildir. Ayrıntılar: [Prompt takip düzeltmesi](PROMPT_YORUM_TASMASI_DUZELTMESI.md).
+Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sürümünde güçlendirildi. Aynı DNS sorusunun iki tekrarı ve bir UAT kontrolünde yorum taşması görülmedi; dokuz yerel RAG/prompt testi geçti. Bu hedefli kontrol tam V2 tekrarına eşdeğer değildir. Ayrıntılar: [Prompt takip düzeltmesi](docs/PROMPT_YORUM_TASMASI_DUZELTMESI.md).
 
-9 Ekim'de belgelenmiş önceki değerlendirmede 8 ilgili sorunun beklenen kaynağı ilk sırada bulunmuş, 2 kaynak dışı soru için doğru çekimserlik gözlenmiş ve ortalama süre yaklaşık 10,1 saniye olmuştur. Bunlar mevcut sürüm için yeniden ölçülmüş sonuçlar değildir. Ayrıntılar: [Pilot API ve değerlendirme](PILOT_API_VE_DEGERLENDIRME.md).
+9 Ekim'de belgelenmiş önceki değerlendirmede 8 ilgili sorunun beklenen kaynağı ilk sırada bulunmuş, 2 kaynak dışı soru için doğru çekimserlik gözlenmiş ve ortalama süre yaklaşık 10,1 saniye olmuştur. Bunlar mevcut sürüm için yeniden ölçülmüş sonuçlar değildir. Ayrıntılar: [Pilot API ve değerlendirme](docs/PILOT_API_VE_DEGERLENDIRME.md).
 
-6 Kasım’daki ilk uzmanlık aktarımında 15 yerel test ve 3 hedefli canlı API kontrolü geçti. İkinci aktarımda 26 yeni kaydın hazır durumu, tüm eski 198 kayıt/chunk’ın değişmediği ve iki doğal dil aramasında beklenen kaynağın ilk sırada bulunduğu doğrulandı; bu turda yeni yanıt üretimi ölçülmedi. Tam V2 seti yeniden çalıştırılmadı; ayrıntılar [uzmanlık kaynakları belgesinde](UZMANLIK_VERILERININ_KULLANIMI.md).
+6 Kasım’daki ilk uzmanlık aktarımında 15 yerel test ve 3 hedefli canlı API kontrolü geçti. İkinci aktarımda 26 yeni kaydın hazır durumu, tüm eski 198 kayıt/chunk’ın değişmediği ve iki doğal dil aramasında beklenen kaynağın ilk sırada bulunduğu doğrulandı; bu turda yeni yanıt üretimi ölçülmedi. Tam V2 seti yeniden çalıştırılmadı; ayrıntılar [uzmanlık kaynakları belgesinde](docs/UZMANLIK_VERILERININ_KULLANIMI.md).
 
 ## Kod haritası
 
@@ -210,11 +210,14 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 | `rag_prompts.py` | Ortak yönerge ve uzmanlık modları |
 | `rag_ticket_pilotu.py` | Terminal pilotu, oturum yönetimi, model çıktısı kontrolü |
 | `ticket_vektor_arama.py` | İlk pilot embedding önbelleği ve bellek içi arama |
-| `ticket_inceleme.py` | Ham yorumlardan manuel inceleme adayları |
+| `scripts/ticket_inceleme.py` | Ham yorumlardan manuel inceleme adayları (ana klasörden çalıştırılır) |
+| `scripts/embedding_erisim_testi.py` | İlk embedding erişim denemesi |
 | `database/` | PostgreSQL şeması, bağlantı ve veri aktarımı |
 | `mssql/` | SQL Server şeması ve kullanıcı/sohbet/mesaj erişimi |
 | `tests/` | RAG, prompt ve MSSQL testleri |
-| `01_ticket_veri_hazirlama.ipynb` | Ticket veri hazırlama çalışması |
+| `scripts/01_ticket_veri_hazirlama.ipynb` | Ticket veri hazırlama çalışması (CSV'leri ana klasörde arar) |
+| `docs/` | Tasarım, karar ve test raporları |
+| `evaluation/` | Değerlendirme soru setleri (v1–v3) |
 
 ## Sonraki geliştirmeler
 
@@ -226,12 +229,12 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 
 ## Diğer belgeler
 
-- [PostgreSQL kurulumu](DATABASE.md)
-- [RAG akışı](RAG_Akisi.md)
-- [ER taslağı](ER_Taslagi.md)
-- [Model seçimi](Model_Secimi.md)
-- [Uzmanlık yönergeleri](PROMPT_YAPISI.md)
-- [Uygulama kararları](KARARLAR_22_EKIM.md)
+- [PostgreSQL kurulumu](docs/DATABASE.md)
+- [RAG akışı](docs/RAG_Akisi.md)
+- [ER taslağı](docs/ER_Taslagi.md)
+- [Model seçimi](docs/Model_Secimi.md)
+- [Uzmanlık yönergeleri](docs/PROMPT_YAPISI.md)
+- [Uygulama kararları](docs/KARARLAR_22_EKIM.md)
 
 Tasarım belgelerindeki planlar tamamlanmış özellikler olarak değerlendirilmemelidir. Ham veriler, yerel çıktı dosyaları ve kimlik bilgileri depodan ayrı tutulur.
 
@@ -420,7 +423,7 @@ API güncellendikten sonra yeniden başlatılmalıdır. `tests/test_feedback.py`
 
 ### İlk resmî rehberler (12 Kasım 2026)
 
-Windows AD çoğaltma raporu ve Oracle 19c tahmini SQL planı rehberleri eklendi; toplam bilgi tabanı 448 kayıt/chunk. Aktarım, kaynaklı yanıt, kullanıcı kontrolleri ve açık zaman aşımı sorunu [rehber test raporunda](REHBER_TEST_SONUCLARI_20261112.md) ayrı gösterilir. Komutlar gerçek AD/Oracle ortamında çalıştırılmadı.
+Windows AD çoğaltma raporu ve Oracle 19c tahmini SQL planı rehberleri eklendi; toplam bilgi tabanı 448 kayıt/chunk. Aktarım, kaynaklı yanıt, kullanıcı kontrolleri ve açık zaman aşımı sorunu [rehber test raporunda](docs/REHBER_TEST_SONUCLARI_20261112.md) ayrı gösterilir. Komutlar gerçek AD/Oracle ortamında çalıştırılmadı.
 
 
 ### Admin raporlama paneli (12 Kasım 2026)
@@ -446,7 +449,7 @@ Yönetim panelindeki **Bilgi Merkezi** bölümü yalnızca yönetici rolüne aç
 - **Yükleme:** servis masası CSV'si (`issueid`, `problem`, `solution` zorunlu; en fazla 500 satır) veya resmî rehber JSON'u (`data_sources/official_guides` biçimi, yalnız learn.microsoft.com ve docs.oracle.com). Dosya 1 MB ile sınırlıdır, içeriği çalıştırılmaz. Önce **Doğrula** ile önizleme ve hata listesi görülür; hata varsa hiçbir şey yazılmaz.
 - **Onay akışı:** yüklenen kayıtlar `pending` olarak girer, chunk/embedding yoktur ve aranamaz. **İndeksle ve onayla** (en fazla 10) kayıt başına embedding üretir (Cloudflare erişimi gerekir) ve kaydı `approved/ready` yapar. Aynı dosya tekrar yüklenirse kayıtlar çoğalmaz.
 - **Devre dışı bırakma:** kayıt silinmez, `excluded` olur ve aramadan çıkar; geri alınabilir.
-- Oracle belgelerinin telifi Oracle'a aittir; yüklenecek rehber metni kısa, olgu temelli ve kendi cümlelerimizle yazılmış olmalıdır ([KAYNAK_POLITIKASI.md](KAYNAK_POLITIKASI.md)).
+- Oracle belgelerinin telifi Oracle'a aittir; yüklenecek rehber metni kısa, olgu temelli ve kendi cümlelerimizle yazılmış olmalıdır ([KAYNAK_POLITIKASI.md](docs/KAYNAK_POLITIKASI.md)).
 
 `tests/test_knowledge_center.py` doğrulama, yetki ve arayüzü sınar; `KB_SQL_TEST=1` ile gerçek PostgreSQL üzerinde, geri alınan yükleme/onay/devre dışı bırakma testi de çalışır. Yeni uçlar için API ve Streamlit yeniden başlatılmalıdır.
 

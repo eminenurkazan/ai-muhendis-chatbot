@@ -34,11 +34,11 @@ class LoadQuestionsTests(unittest.TestCase):
         for name, count in [("evaluation_questions_v1.json", 10), ("evaluation_questions_v2.json", 10),
                             ("evaluation_questions_v3.json", 23)]:
             with self.subTest(name=name):
-                self.assertEqual(len(ev.load_questions(ROOT / name)), count)
+                self.assertEqual(len(ev.load_questions(ROOT / "evaluation" / name)), count)
 
     def test_v3_covers_required_scenarios(self):
         counts = {}
-        for item in ev.load_questions(ROOT / "evaluation_questions_v3.json"):
+        for item in ev.load_questions(ROOT / "evaluation" / "evaluation_questions_v3.json"):
             counts[item["category"]] = counts.get(item["category"], 0) + 1
             if item["category"] == "windows_server":
                 self.assertEqual(item["expertise_mode"], "windows_server")

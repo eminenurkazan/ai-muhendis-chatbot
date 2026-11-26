@@ -1,8 +1,8 @@
 """Değerlendirme soru setini yerel API'de çalıştırır ve sonuçları kaydeder.
 
 Örnekler:
-    python evaluate_api.py --questions evaluation_questions_v3.json
-    python evaluate_api.py --questions evaluation_questions_v2.json --flow direct
+    python evaluate_api.py --questions evaluation/evaluation_questions_v3.json
+    python evaluate_api.py --questions evaluation/evaluation_questions_v2.json --flow direct
 
 Varsayılan akış (``chat``) arayüzle aynı yolu kullanır: her soru için ayrı bir sohbet
 açılır (soruda belirtilen uzmanlık moduyla) ve soru ``/chats/{id}/ask`` ile sorulur;
@@ -27,7 +27,7 @@ import uuid
 
 
 ROOT = Path(__file__).resolve().parent
-QUESTIONS_PATH = ROOT / "evaluation_questions_v1.json"
+QUESTIONS_PATH = ROOT / "evaluation" / "evaluation_questions_v1.json"
 OUTPUT_DIR = ROOT / "outputs_local"
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 EXPERTISE_MODES = ("service_desk", "windows_server", "oracle_db")

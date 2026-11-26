@@ -51,7 +51,7 @@ V2 tekrar çalıştırma komutu (yeni bulut istekleri oluşturur):
 
 ```powershell
 Set-Location -LiteralPath "D:\ai-muhendis-chatbot"
-.\.venv\Scripts\python.exe .\evaluate_api.py --questions .\evaluation_questions_v2.json --output-dir .\outputs_local\evaluation_set_v2_191_tickets\runs
+.\.venv\Scripts\python.exe .\evaluate_api.py --questions .\evaluation\evaluation_questions_v2.json --output-dir .\outputs_local\evaluation_set_v2_191_tickets\runs
 ```
 
 Ham sonuç: `D:\ai-muhendis-chatbot\outputs_local\evaluation_set_v2_191_tickets\runs\evaluation_results_v2_20261105_161914_454264.json`
