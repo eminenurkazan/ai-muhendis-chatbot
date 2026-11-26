@@ -75,7 +75,7 @@ Uygulama, OpenAI'nin Sign in with ChatGPT akışıyla kullanıcının ChatGPT pl
 | 5 Kasım | 191 ticket | 10 | 8/8 | 2/2 | 9,3 sn | [DEGERLENDIRME_V2_SONUCU.md](DEGERLENDIRME_V2_SONUCU.md) |
 | 26 Kasım | 458 kayıt | 23 | 20/20 | 3/3 | 8,2 sn | [TEST_RAPORU.md](TEST_RAPORU.md) |
 
-26 Kasım testinde 23 yanıtın elle incelemesi: 20 uygun, 3 kısmen uygun, 0 uygunsuz. Kısmen uygun yanıtlar, kaynakta yazmayan bir "geçici çözüm" nitelendirmesi ekliyor. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir. Yanıtlardaki komutlar gerçek ortamda çalıştırılmadı. Bu sonuçlar tek çalıştırmaya dayanır; istatistiksel bir başarı oranı değildir.
+26 Kasım testinde 23 yanıtın elle incelemesi: 22 uygun, 1 kısmen uygun, 0 uygunsuz. Kısmen uygun yanıt, kayıttaki bir öneriyi yapılan işlemle birleştiriyor. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir. Yanıtlardaki komutlar gerçek ortamda çalıştırılmadı. Set 3 kez çalıştırıldı: arama ve kullanılan kaynaklar üç çalıştırmada da aynıydı; elle inceleme 22/23/22 uygun, ortalama süre 8,2/9,4/9,2 sn. Uygulama günlüğüne göre sürenin tamamına yakını model aşamasındadır (medyan 8,1 sn; embedding 0,29 sn, arama 0,06 sn). Üç tekrar istatistiksel bir başarı oranı değildir.
 
 ## 7. Açık kararlar
 

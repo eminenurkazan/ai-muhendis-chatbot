@@ -181,7 +181,7 @@ MSSQL bağlantısı PostgreSQL'den bağımsız `MSSQL_CONNECTION_STRING` ayarın
 
 ## Test ve değerlendirme
 
-**Resmî test raporu (26 Kasım 2026):** 10 servis masası, 5 Windows Server, 5 Oracle optimizasyon ve 3 kaynak dışı soru arayüzle aynı akıştan (`/chats/{id}/ask`) çalıştırıldı. 20 ilgili sorunun hepsinde beklenen kaynak ilk sırada bulunup kullanıldı; 3 kaynak dışı soruda yanıt uydurulmadı; ortalama süre 8,2 saniye. Elle incelemede 20 yanıt kaynakla uyumlu, 3 servis masası yanıtı kaynakta olmayan küçük bir "geçici çözüm" nitelendirmesi nedeniyle kısmen uygun bulundu. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir; komutlar gerçek ortamda çalıştırılmadı. Ayrıntılar ve sınırlılıklar: [Test raporu](docs/TEST_RAPORU.md).
+**Resmî test raporu (26 Kasım 2026):** 10 servis masası, 5 Windows Server, 5 Oracle optimizasyon ve 3 kaynak dışı soru arayüzle aynı akıştan (`/chats/{id}/ask`) çalıştırıldı. 20 ilgili sorunun hepsinde beklenen kaynak ilk sırada bulunup kullanıldı; 3 kaynak dışı soruda yanıt uydurulmadı. Set 3 kez çalıştırıldı (69 yanıt); arama ve kullanılan kaynaklar üçünde de aynıydı. Elle incelemede çalıştırmalar 22/23/22 uygun yanıt verdi; kısmen uygun yanıt iki çalıştırmada da SD03'tü (kayıttaki bir öneriyi yapılan işlemle birleştirme). Ortalama süre 8,9 saniye; gecikmenin tamamı model aşamasında. Windows/Oracle sonuçları, konulara göre seçilmiş resmî rehberlere dayandığı için iyimserdir; komutlar gerçek ortamda çalıştırılmadı. Ayrıntılar ve sınırlılıklar: [Test raporu](docs/TEST_RAPORU.md).
 
 ```powershell
 .\.venv\Scripts\python.exe evaluate_api.py --questions evaluation\evaluation_questions_v3.json --output-dir outputs_local\evaluation_set_v3\runs
@@ -259,7 +259,7 @@ Bu çalıştırmada görülen ek ihtimal için ortak prompt `2026-11-05-v2` sür
 ## Sonraki geliştirmeler
 
 - Oracle geri yükleme/kurtarma (RMAN restore/recovery) için resmî rehber eklemek; mevcut rehber yalnız yedek raporlamayı kapsar.
-- Test raporundaki "geçici çözüm" nitelendirmesi için prompt düzeltmesi yapmak ve V3 setini tekrarlı olarak yeniden çalıştırmak.
+- V3 setini tekrarlı olarak yeniden çalıştırıp yanıtların çalıştırmalar arası değişkenliğini ölçmek.
 - Çok turlu sohbet senaryolarını değerlendirme setine eklemek.
 - Uzun belgeler için çoklu chunk stratejisi uygulamak.
 - Teslim için depoyu şirket GitLab'ına aktarmak; uzaktan/çok kullanıcılı dağıtım için LLM erişimi ve secret yönetimini kararlaştırmak.

@@ -8,16 +8,19 @@ Bu rapor, proje isterlerindeki tamamlanma kriterini karşılamak için hazırlan
 
 | Grup | Soru | Beklenen kaynak 1. sırada | Beklenen kaynak yanıtta kullanıldı | Elle inceleme: uygun / kısmen / uygunsuz | Ort. süre |
 |---|---|---|---|---|---|
-| Servis masası | 10 | 10/10 | 10/10 | 7 / 3 / 0 | 6,7 sn |
+| Servis masası | 10 | 10/10 | 10/10 | 9 / 1 / 0 | 6,7 sn |
 | Windows Server | 5 | 5/5 | 5/5 | 5 / 0 / 0 | 10,2 sn |
 | Oracle DB optimizasyon | 5 | 5/5 | 5/5 | 5 / 0 / 0 | 10,8 sn |
 | Kaynak dışı (olumsuz test) | 3 | — | Doğru ret: 3/3 | 3 / 0 / 0 | 5,3 sn |
-| **Toplam** | **23** | **20/20** | **20/20** | **20 / 3 / 0** | **8,2 sn** |
+| **Toplam** | **23** | **20/20** | **20/20** | **22 / 1 / 0** | **8,2 sn** |
 
 - 23 isteğin hepsi hatasız tamamlandı: zaman aşımı ve yeniden deneme olmadı.
 - 23 yanıtın hepsinde kullanılan kaynak kimlikleri arama adaylarının içindeydi; uydurma kaynak kimliği yoktu.
 - Hiçbir yanıtta sorunun "iddia edilmemesi gerekenler" listesindeki bir ifade görülmedi.
-- "Kısmen uygun" bulunan 3 yanıtın tamamı servis masası grubundadır. Bu yanıtlar kaynakla çelişmiyor, ancak kaynakta yazmayan küçük bir nitelendirme ekliyor (bkz. Bölüm 5).
+- "Kısmen uygun" bulunan tek yanıt SD03'tür. Kaynakla çelişmiyor, ancak kayıttaki bir öneriyi yapılan işlemle birleştiriyor (bkz. Bölüm 5).
+- **Tekrarlı ölçüm:** Set aynı sistemle iki kez daha çalıştırıldı (toplam 3 çalıştırma, 69 yanıt; bkz. Bölüm 4.1). Otomatik ölçümler üç çalıştırmada da birebir aynı çıktı: arama sonuçları ve kullanılan kaynaklar değişmedi. Elle incelemede çalıştırmalar 22/1/0, 23/0/0 ve 22/1/0 sonuç verdi. Kısmen uygun yanıt iki çalıştırmada da SD03'tü. Ortalama süre 8,2 / 9,4 / 9,2 saniye oldu; gecikmenin tamamı model aşamasından geliyor.
+
+> **Düzeltme (26 Kasım 2026):** Raporun ilk sürümünde SD06 ve SD07 de "kısmen uygun" sayılmıştı. Gerekçe, "geçici çözüm" nitelendirmesinin kaynakta olmamasıydı. Bu yanlıştı. İnceleme yalnızca chunk metnine bakmıştı. Model ise kaydın bütün alanlarını alır ve iki kaydın `solution_scope` alanı `workaround` değerindedir. Prompt da workaround'u "geçici iyileştirme" olarak sunmayı ister. Bu iki yanıt uygun olarak düzeltildi. Toplam sonuç 20/3/0'dan 22/1/0'a değişti.
 
 ## 2. Test ortamı
 
@@ -33,7 +36,7 @@ Bu rapor, proje isterlerindeki tamamlanma kriterini karşılamak için hazırlan
 | Prompt sürümü | `2026-11-12-guide-v1` |
 | Arama | Uzmanlık moduna göre alan filtresi, cosine benzerliğiyle ilk 3 aday |
 | İlişkisel veritabanı | SQL Server 2022 Express, ODBC Driver 17 |
-| Çalıştırma | 26.11.2026 13:21:41 – 13:24:51 (+03:00), tek çalıştırma |
+| Çalıştırmalar | 26.11.2026 (+03:00): 1) 13:21:41–13:24:51 · 2) 14:44:52–14:48:33 · 3) 14:48:35–14:52:11. Üçünde de aynı kod, prompt ve bilgi tabanı kullanıldı. |
 
 ## 3. Yöntem
 
@@ -71,7 +74,7 @@ Her soruda iki liste bulunur. `required_points` listesi yanıtta olması gereken
 
 Her yanıt iki şeyle karşılaştırıldı:
 1. Sorunun `required_points` ve `must_not_claim` listeleri.
-2. Modele bağlam olarak verilen chunk metninin tamamı. Buna kaydın ortam/ön koşul alanı da dahildir.
+2. Modele bağlam olarak verilen kayıt alanlarının tamamı: problem, çözüm, sonuç, `resolution_confirmed`, `solution_scope`, `limitations` ve ortam/ön koşul gibi metadata alanları.
 
 Değerlendirme ölçüsü V2 ile aynıdır:
 - **Uygun:** Yanıttaki her olgu kaynakta var; kaynağın sınırları (doğrulanmamış sonuç, müşteri teyidi yok vb.) korunuyor.
@@ -91,8 +94,8 @@ Eksik ayrıntı ile yanlış bilgi ayrı tutuldu. Kaynaktaki bir ayrıntının y
 | SD03 | service_desk | 1006956.0 | 1 | 8,0 | **Kısmen uygun** | Öneri ile yapılan işlem birleştirilmiş |
 | SD04 | service_desk | 1008137.0 | 1 | 7,3 | Uygun | Resetin kanıtlanmadığı doğru belirtildi |
 | SD05 | service_desk | 1007291.0 | 1 | 6,7 | Uygun | UAT teyidi ile production aktarımı doğru ayrıldı |
-| SD06 | service_desk | 1004444.0 | 1 | 5,7 | **Kısmen uygun** | Kaynakta olmayan "geçici önlem" nitelendirmesi |
-| SD07 | service_desk | 1010324.0 | 1 | 7,0 | **Kısmen uygun** | Kaynakta olmayan "geçici çözüm" nitelendirmesi |
+| SD06 | service_desk | 1004444.0 | 1 | 5,7 | Uygun (kapsam kısmi) | "Geçici önlem" nitelendirmesi kaydın `workaround` kapsamına dayanıyor |
+| SD07 | service_desk | 1010324.0 | 1 | 7,0 | Uygun (kapsam kısmi) | Tek öğe teyidi 12 öğeye genellenmedi |
 | SD08 | service_desk | 1006259.0 | 1 | 7,2 | Uygun | Önerinin uygulanmadığı doğru belirtildi |
 | SD09 | service_desk | 1005689.0 | 1 | 6,5 | Uygun | Başarıyı destek ekibinin bildirdiği doğru |
 | SD10 | service_desk | 1007932.0 | 1 | 6,5 | Uygun | Yük dengeleyici adımı koşullu olarak sunuldu |
@@ -110,15 +113,57 @@ Eksik ayrıntı ile yanlış bilgi ayrı tutuldu. Kaynaktaki bir ayrıntının y
 | NS02 | oracle_db | — | — | 6,8 | Uygun (doğru ret) | Yakın Data Guard kayıtlarını dayanak yapmadı |
 | NS03 | windows_server | — | — | 4,7 | Uygun (doğru ret) | Komut uydurmadı, hata kodu sordu |
 
+Bu tablo 1. çalıştırmanın sonuçlarıdır.
+
+### 4.1 Tekrarlı ölçüm (3 çalıştırma)
+
+Yanıtların çalıştırmadan çalıştırmaya ne kadar değiştiğini görmek için set, kodda, prompt'ta veya bilgi tabanında değişiklik yapılmadan iki kez daha çalıştırıldı.
+
+| Ölçüm | Çalıştırma 1 | Çalıştırma 2 | Çalıştırma 3 |
+|---|---|---|---|
+| Tamamlanan / hata | 23 / 0 | 23 / 0 | 23 / 0 |
+| Beklenen kaynak 1. sırada | 20/20 | 20/20 | 20/20 |
+| Beklenen kaynak kullanıldı | 20/20 | 20/20 | 20/20 |
+| Kaynak dışı doğru ret | 3/3 | 3/3 | 3/3 |
+| Uydurma kaynak kimliği | 0 | 0 | 0 |
+| Elle inceleme (uygun / kısmen / uygunsuz) | 22 / 1 / 0 | 23 / 0 / 0 | 22 / 1 / 0 |
+| Kısmen uygun soru | SD03 | — | SD03 |
+| Ortalama / en uzun süre | 8,2 / 13,8 sn | 9,4 / 16,1 sn | 9,2 / 14,9 sn |
+
+- **Arama tamamen kararlı.** 23 sorunun her birinde üç çalıştırmada da aynı 3 aday aynı sırada geldi, model aynı kaynakları kullandı. OR02'de iki kaynak (erişim yolları + istatistik) üçünde de birlikte kullanıldı.
+- **Yanıt metni değişiyor, içerik değişmiyor.** Yanıtların uzunluğu ve cümleleri farklı, ama ana olgular ve kaynak sınırları üç çalıştırmada da korundu. 69 yanıtın hiçbirinde "iddia edilmemesi gerekenler" listesindeki bir ifade görülmedi.
+- **SD03 aralıklı bir zayıflık.** Öneri ile yapılan işlemin birleştirilmesi 3 çalıştırmanın 2'sinde görüldü; 2. çalıştırmada yanıt "HQ DB sunucusuna script ve job" bilgisini doğru verdi. Tutarlı ama aralıklı bir sorun olarak izlenmeli (bkz. Bölüm 9).
+- **Eksik ayrıntılar da aralıklı.** WS04'te aracın ayrıca indirilmesi gerektiği üç çalıştırmanın hiçbirinde söylenmedi. Olay kimliklerinin eski sürüm uyarısı 3. çalıştırmada yoktu. OR03'teki otomatik istatistik görevi 2. ve 3. çalıştırmada yanıtta yer aldı.
+- **Küçük üslup notları:** NS02'nin iki yanıtı, getirilen ilgisiz kayıtların konusunu (yedekleme, recovery catalog) kısaca anıyor. Prompt ilgisiz kayıtları anlatmamayı ister, ama bu kayıtlar dayanak yapılmadı. NS01'in bir yanıtında DHCP failover'ı tanımlayan, sorunun yeniden ifadesi niteliğinde kaynak dışı bir cümle var.
+
+**Süre dağılımı (69 istek):**
+
+| Grup | Ortalama | En kısa | En uzun |
+|---|---|---|---|
+| Servis masası | 7,5 sn | 5,7 sn | 10,1 sn |
+| Windows Server | 10,3 sn | 8,3 sn | 12,4 sn |
+| Oracle DB | 11,2 sn | 8,7 sn | 15,7 sn |
+| Kaynak dışı | 7,9 sn | 4,4 sn | 16,1 sn |
+| **Toplam** | **8,9 sn** (medyan 8,7) | 4,4 sn | 16,1 sn |
+
+Uygulama günlüğündeki aşama süreleri (`app_logs`, `chat.ask_completed`, aynı gün 69 olay) gecikmenin kaynağını gösteriyor:
+
+| Aşama | Medyan | En uzun |
+|---|---|---|
+| Embedding | 0,29 sn | 1,1 sn |
+| Arama | 0,06 sn | 0,17 sn |
+| Model | 8,1 sn | 15,0 sn |
+
+Süredeki dalgalanmanın tamamı bulut model aşamasındadır. Windows/Oracle yanıtları daha uzun ve kod bloklu olduğu için daha uzun sürüyor. 15 saniyeyi aşan iki istekte (NS01 ve NS03) model aşaması tek başına 13,9–15,0 saniye sürdü. Arama ve veritabanı süreleri ihmal edilebilir düzeyde.
+
 ## 5. Bulgular
 
-### 5.1 Kısmen uygun bulunan yanıtlar
+### 5.1 Kısmen uygun bulunan yanıt
 
 - **SD03 (otomatik yedekleme):** Kayıtta "Windows üzerinden zamanlama" bir **öneri** olarak, "HQ DB sunucusuna script ve günlük job eklenmesi" ise **yapılan işlem** olarak ayrı yazılıdır. Yanıt bu ikisini birleştirip "Windows üzerinde job eklendiği bildirilmiş" diyor. Haftalık tam yedeğin ve geri yüklemenin doğrulanmadığını ise doğru aktarıyor.
-- **SD06 (tarama tarihi):** Uygulanan önlemi "geçici bir önlem olarak ele alınmış" diye nitelendiriyor. Kayıtta bu nitelendirme yok; kayıt yalnızca önlemin tarihleri düzelttiği anlamına gelmediğini söylüyor.
-- **SD07 (12 öğe):** "Bu yaklaşım geçici çözüm kapsamındadır" diyor; kayıtta bu ifade yok. Tek öğe teyidinin 12 öğeye genellenemeyeceğini ise doğru söylüyor.
+Bu, V2'de görülen "kaynakta ayrı duran bilgileri birleştirme" sorununun hafif bir türüdür. Kullanıcıyı yanlış yönlendirecek bir eylem önerisi içermiyor. Tek bir örnek olduğu için prompt değişikliği gerektiren bir örüntü olarak değerlendirilmedi.
 
-**Ortak örüntü:** Model, kaynağın sınırlama notlarını ("tarihleri düzelttiği anlamına gelmez", "kök neden incelemesi isteniyor") kendi "geçici çözüm" yorumuna çeviriyor. Bu, V2'de görülen "kaynakta olmayan nedensel yorum" sorununun daha hafif bir türüdür. Kullanıcıyı yanlış yönlendirecek bir eylem önerisi içermiyor, ancak kaynağa dayanmayan bir değerlendirmeyi kaynak bilgisi gibi sunuyor.
+SD06 ve SD07 ilk sürümde bu bölümdeydi; neden çıkarıldıkları Bölüm 1'deki düzeltme notunda yazıyor.
 
 ### 5.2 Eksik ayrıntılar (yanlış bilgi değil)
 
@@ -148,15 +193,15 @@ SD01–SD08, V2'deki V2Q01–V2Q08 sorularıyla aynı metne sahiptir.
 | Akış | `/ask` (kayıtsız) | `/chats/{id}/ask` (kalıcı sohbet) |
 | Beklenen kaynak 1. sırada | 8/8 | 8/8 |
 | Ortalama süre | 9,3 sn | 6,8 sn |
-| Elle inceleme | 7 uygun, 1 kısmen (V2Q02) | 5 uygun, 3 kısmen (SD03, SD06, SD07) |
+| Elle inceleme | 7 uygun, 1 kısmen (V2Q02) | 7 uygun, 1 kısmen (SD03) |
 
 - Bilgi tabanı 191 kayıttan 458'e büyüdüğü ve aynı havuzda Windows/Oracle kayıtları bulunduğu halde servis masası sorularında arama doğruluğu korundu.
 - V2Q02'deki ek ihtimal sorunu bu çalıştırmada görülmedi.
-- Bu çalıştırmada üç yanıtta yeni küçük nitelendirmeler görüldü. Model çıktısı her çalıştırmada değişebilir. İki değerlendirmeyi farklı kişiler yaptı ve bu incelemede kaynağa bağlılık chunk metni üzerinden daha sıkı kontrol edildi. Bu nedenle farkın bir gerilemeden mi yoksa çalıştırmalar arası değişkenlikten mi kaynaklandığı tek çalıştırmayla belirlenemez.
+- Her iki çalıştırmada da 8 sorudan 7'si uygun, 1'i kısmen uygun bulundu, ama kısmen uygun olan soru farklı: V2'de V2Q02, V3'te SD03. Model çıktısı her çalıştırmada değişebilir ve iki değerlendirmeyi farklı kişiler yaptı. Bu nedenle tek bir çalıştırmayla soru bazında kalıcı bir iyileşme ya da gerileme olduğu söylenemez.
 
 ## 7. Sınırlılıklar
 
-1. **Tek çalıştırma:** Her soru bir kez soruldu. Model çıktısı tekrarlarda değişebilir; sonuçlar istatistiksel bir başarı oranı değildir.
+1. **Az sayıda tekrar:** Her soru 3 kez soruldu. Bu, arama ve kaynak kullanımının kararlı olduğunu, yanıt içeriğinin ise küçük farklarla değiştiğini göstermeye yeter. Ancak 3 tekrar, soru bazında güvenilir bir başarı oranı hesaplamaya yetmez.
 2. **İyimser kaynak seçimi:** Windows ve Oracle soruları, isterlerdeki konular için önceden bilgi tabanına eklenmiş resmî rehberlere dayanır. Rehberler test konularına göre seçildiği için bu gruplardaki 5/5 arama başarısı iyimserdir. Rehber kapsamı dışındaki Windows/Oracle sorularında, örneğin 255 topluluk kaydına dayanan sorularda, başarı ayrıca ölçülmemiştir.
 3. **Komutlar gerçek ortamda çalıştırılmadı:** Yanıtlardaki repadmin, nltest, EventCombMT, EXPLAIN PLAN, DBMS_STATS vb. komutlar gerçek Active Directory, IIS veya Oracle ortamında denenmedi. Değerlendirme, yanıtın kaynağa bağlılığını ölçer; komutun hedef ortamda başarılı olacağını kanıtlamaz.
 4. **Kaynak doğruluğu:** Değerlendirme kaynağı doğru kabul eder. Ticket kayıtlarındaki çözümlerin ya da rehber özetlerinin kendisi bu testte bağımsız olarak doğrulanmadı.
@@ -179,8 +224,8 @@ Entegrasyon testlerinin eklediği kayıtlar transaction ile geri alındı.
 
 ## 9. Öneriler
 
-1. **Prompt düzeltmesi:** Prompt'a "kaynak açıkça 'geçici' veya 'workaround' demiyorsa çözümü öyle nitelendirme; öneriyi yapılan işlemle birleştirme" kuralı eklenmeli. Ardından SD03, SD06 ve SD07 hedefli olarak yeniden denenmeli. Prompt sürümü değişeceği için tam set de tekrar çalıştırılmalı.
-2. **Tekrarlı ölçüm:** Değişkenliği görmek için set en az 3 kez çalıştırılıp sonuçlar soru bazında karşılaştırılmalı.
+1. **SD03'teki birleştirme:** Sorun 3 çalıştırmanın 2'sinde görüldü ve başka hiçbir soruda görülmedi. Prompt'a genel bir kural eklemek, prompt sürümünü değiştirip bütün seti yeniden doğrulamayı gerektirir. Bunun yerine kaynak kaydın (1006956.0) "öneri" ve "yapılan işlem" cümleleri daha net ayrılabilir; örneğin "Windows üzerinden zamanlama" önerisi ayrı bir satıra alınabilir. Ardından yalnızca SD03 tekrar ölçülür.
+2. **Süre izleme:** Yanıt süresinin tamamı model aşamasında olduğu için, kullanıcıya 15 saniyeyi aşan bekleme durumlarında ilerleme göstergesi korunmalıdır. `app_logs` aşama süreleri bu izleme için yeterlidir.
 3. **Rehber dışı sorular:** Windows ve Oracle için topluluk kayıtlarına dayanan, rehberlerden bağımsız 5'er ek soru hazırlanmalı. Böylece Bölüm 7'deki iyimserlik ölçülebilir.
 4. **Eksik içerik:** EventCombMT rehber kaydına "araç ayrıca indirilir" bilgisi daha belirgin biçimde, örneğin çözüm adımlarının başına, eklenebilir.
 5. **Çok turlu test:** "Önceki mesajları hatırlama" isteri için 2–3 adımlı birkaç sohbet senaryosu değerlendirme setine eklenmeli.
@@ -206,6 +251,7 @@ Aşağıdaki dosyalar yerelde Git dışında tutulur (`outputs_local/`):
 | `outputs_local/evaluation_set_v3/runs/evaluation_results_v3_20261126_132141_860039.json` | 23 sorunun ham sonucu: yanıt metni, kaynak kimlikleri, kaynak görüntüleri, süreler |
 | `…_860039.meta.json` | Çalıştırma bilgileri: başlangıç/bitiş, soru ve araç hash'leri, kategori özetleri |
 | `…_860039_manual_review.json` | Soru bazında elle inceleme kararı, gerekçe ve bulunan sorunlar |
+| `…_20261126_144452_617953*.json`, `…_20261126_144835_222767*.json` | 2. ve 3. çalıştırmanın ham sonucu, meta bilgisi ve elle incelemesi |
 
 Test sohbetleri ayrıca MSSQL `ServisMasasiApp` veritabanında test kullanıcısının sohbetleri olarak kayıtlıdır.
 

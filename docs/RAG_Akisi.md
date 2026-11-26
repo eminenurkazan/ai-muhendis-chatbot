@@ -162,17 +162,17 @@ flowchart TD
 | Beklenen kaynak yanıtta kullanıldı | 20/20 |
 | Kaynak dışı sorularda doğru ret | 3/3 |
 | Uydurma kaynak kimliği | 0 |
-| Elle inceleme | 20 uygun, 3 kısmen uygun, 0 uygunsuz |
-| Ortalama süre | 8,2 saniye |
+| Elle inceleme | 22 uygun, 1 kısmen uygun, 0 uygunsuz |
+| Ortalama süre | 8,2 saniye (3 çalıştırmanın ortalaması 8,9 sn; medyan model aşaması 8,1 sn, arama 0,06 sn) |
 
-Sınırlılıklar (tek çalıştırma, test konularına göre seçilmiş rehberler, komutların gerçek ortamda denenmemesi) ve soru bazında sonuçlar [TEST_RAPORU.md](TEST_RAPORU.md) içindedir. Önceki ölçümler:
+Set aynı sistemle 3 kez çalıştırıldı; arama ve kaynak kullanımı üçünde de aynı, elle inceleme 22/23/22 uygun. Sınırlılıklar (az sayıda tekrar, test konularına göre seçilmiş rehberler, komutların gerçek ortamda denenmemesi) ve soru bazında sonuçlar [TEST_RAPORU.md](TEST_RAPORU.md) içindedir. Önceki ölçümler:
 - [9 Ekim pilotu](PILOT_API_VE_DEGERLENDIRME.md): 20 ticket.
 - [5 Kasım V2](DEGERLENDIRME_V2_SONUCU.md): 191 ticket.
 
 ## 4. Açık konular
 
 1. Uzun belgeler için problem–çözüm bütünlüğünü koruyan çoklu chunk stratejisi uygulanmadı.
-2. Model, kaynağın sınırlama notlarını zaman zaman kaynakta yazmayan bir "geçici çözüm" nitelendirmesine çeviriyor (test raporu, Bölüm 5). Prompt düzeltmesi ve yeniden test önerildi.
+2. Bir yanıtta (SD03) kayıttaki öneri ile yapılan işlem birleştirildi (test raporu, Bölüm 5). Tek bir örnek olduğu için prompt değiştirilmedi; tekrarlı ölçümde izlenecek.
 3. Oracle backup-restore konusunda yalnız RMAN raporlama rehberi var; geri yükleme ve kurtarma rehberi yok.
 4. `chat_messages.input_tokens` ve `output_tokens` alanları şemada var ama doldurulmuyor.
 5. Çok kullanıcılı yük ve uzaktan dağıtım denenmedi. Model erişimi kişisel ChatGPT oturumuna bağlı olduğu için üretim dağıtımında erişim ve secret yönetimi ayrıca kararlaştırılmalı.
