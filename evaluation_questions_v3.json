@@ -1,0 +1,464 @@
+[
+  {
+    "question_id": "SD01",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Sürüm yükseltmesinden sonra kullanıcı denetim kayıtlarını gösteren rapor sayfası açılmıyor. Benzer olayda sorun neye bağlanmış, ne yapılmış ve sonucu kim bildirmiş?",
+    "expected_ticket_ids": [
+      "1008656.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Yüklü eski güvenlik raporları yükseltilmiş uygulamayla uyumlu değildi.",
+      "Eski raporlar kaldırılıp uyumlu yenileri yüklendi.",
+      "Gerekli raporların üretilebildiğini support bildirdi; ayrı reporter teyidi yok."
+    ],
+    "must_not_claim": [
+      "Reporterın başarıyı doğruladığı.",
+      "Bu vakanın yalnız kullanıcı yetkisi verilerek çözüldüğü.",
+      "Kaynakta verilmeyen rapor dosyası veya upgrade sürümü."
+    ],
+    "origin": "V2Q01 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD02",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Yeni sunucudan bağlantı kurarken unknown host hatası alıyoruz. IP adresiyle erişim var ama sunucu adıyla yok. Benzer kayıtta ne kontrol edilmiş; bağlantının açılması tüm uygulama sorunlarının da çözüldüğünü gösteriyor mu?",
+    "expected_ticket_ids": [
+      "1009846.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "IP ve hostname erişimleri karşılaştırıldı; ikinci makinedeki DNS ayarı ele alındı.",
+      "Network/sys ekibi düzeltme, support daha sonra bağlantı/kurulum tamamlanması bildirdi.",
+      "Sonraki uygulama ekranı hataları sürdü; bütün servisin sorunsuz çalıştığı kanıtlanmadı."
+    ],
+    "must_not_claim": [
+      "Bütün ekranların veya schema izinlerinin DNS değişikliğiyle düzeldiği.",
+      "DNSte değiştirilen tam ayar, gerçek host/IP/port veya kaynakta olmayan komut."
+    ],
+    "origin": "V2Q02 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD03",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Veritabanı için otomatik yedek alınmıyor. Benzer kayıtta günlük yedekleme nasıl zamanlanmış? Haftalık tam yedeğin ve geri yüklemenin de çalıştığını söyleyebilir miyiz?",
+    "expected_ticket_ids": [
+      "1006956.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "HQ DB sunucusuna script ve her gün çalışacak zamanlanmış job eklendiği bildirildi.",
+      "İlk planda günlük incremental ve haftalık full vardı; haftalık full jobın gerçekten kurulduğu belgelenmiyor.",
+      "Jobın başarılı çalışması ve geri yükleme testi doğrulanmadı."
+    ],
+    "must_not_claim": [
+      "Haftalık full backupın veya restore testinin başarıyla tamamlandığı.",
+      "Maskeli backup scriptinin içeriği veya hedef yolu."
+    ],
+    "origin": "V2Q03 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD04",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Üç ONUS inward öğesi initial posting aşamasında takılmış. Kaynak vakada nasıl bir neden bulunmuş, kalan öğe için ne önerilmiş ve bu işlemin gerçekten tamamlandığı doğrulanmış mı?",
+    "expected_ticket_ids": [
+      "1008137.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Support core banking yanıtının timeouta düştüğünü bildirdi; özette 30 saniyeyi aştığı yazıyor.",
+      "Üç öğenin ikisinin başka durumlara ilerlediği gözlendi; son öğe için reset önerildi.",
+      "Resetin yapıldığı ve son öğenin başarıyla ilerlediği belgelenmiyor; reporter teyidi yok."
+    ],
+    "must_not_claim": [
+      "Kalan öğenin resetlendiği veya üç öğenin tamamının başarıyla işlendiği.",
+      "Yeni finansal işlem oluşturma ya da maskeli SQL/reset komutu."
+    ],
+    "origin": "V2Q04 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD05",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Arayüzden kullanıcı rolü veya hesap bitiş tarihi değiştirilirken object is locked or not exists hatası geliyor; sorun yeni kullanıcılarda da var. Kaynakta hangi geçici yaklaşım uygulanmış, UAT ve production için kim neyi doğrulamış?",
+    "expected_ticket_ids": [
+      "1007291.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Tekrarlanan elle DB workaroundından sonra shadow şemada trigger önerildi.",
+      "Reporter triggerın UATta çalıştığını açıkça doğruladı, sonra productiona uyguladığını bildirdi.",
+      "Productionda tekrar görülmedi bilgisi assigneenin sözlü görüşme aktarımı; doğrudan reporter başarı teyidi UAT kapsamındadır."
+    ],
+    "must_not_claim": [
+      "Triggerın kalıcı kök neden düzeltmesi olduğu.",
+      "Reporterın production başarısını UATtakiyle aynı açıklıkta doğrudan yazdığı.",
+      "Kaynakta görünmeyen trigger SQLi veya tablo/alan adı."
+    ],
+    "origin": "V2Q05 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD06",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Yükseltmeden sonra bazı öğelerin tarama tarihi sistem tarihiyle uyuşmuyor. Benzer ticketta son olarak hangi önlem uygulanmış? Bu, tarihlerin düzeldiğinin kanıtı mı?",
+    "expected_ticket_ids": [
+      "1004444.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Son açık öneri ve uygulama, sorun olursa batchi upload managerda durduracak triggerdır.",
+      "Reporter uygulamaya izin verdi; triggerın uygulandığını others bildirdi.",
+      "Tarihlerin düzeldiği veya sorunun tekrar etmediği doğrulanmadı; bu bir geçici önlemdir."
+    ],
+    "must_not_claim": [
+      "Triggerın tüm tarama tarihlerini otomatik düzelttiğinin kanıtlandığı.",
+      "Reporterın başarılı sonucu doğruladığı.",
+      "Maskeli trigger kodu veya kesin production ortamı."
+    ],
+    "origin": "V2Q06 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD07",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Daha önce iade edilen 12 öğeyi yeniden sunarken aynı alanlara sahip kayıt zaten var hatası alıyoruz; yerel repository temizliği de işe yaramıyor. Benzer vakadaki son denemede ne doğrulanmış? Bunu 12 öğenin tamamı için başarı sayabilir miyiz?",
+    "expected_ticket_ids": [
+      "1010324.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Önceki güncellemeler başarısız oldu; support statü/senkronizasyon ve summary kayıtlarını inceledi.",
+      "Son düzeltme bir öğeyle denendi; reporter bu öğenin çalıştığını açıkça bildirdi.",
+      "Kalan öğelere değişiklik uygulandığı support tarafından bildirildi; hepsinin yeniden yükleme sonucu ve kalıcı kök neden teyidi yok."
+    ],
+    "must_not_claim": [
+      "Bütün 12 öğenin başarıyla işlendiği.",
+      "Önceki başarısız scriptlerin işe yaradığı veya kalıcı kök nedenin kesinleştiği.",
+      "Kaynakta maskelenmiş veri silme/güncelleme SQLi."
+    ],
+    "origin": "V2Q07 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD08",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Servis veya kuyruk takıldığında yüzlerce işlemi elle kontrol etmek yerine e-posta uyarısı almak istiyoruz. Benzer ticketta nasıl bir izleme yaklaşımı önerilmiş ve bu sistemin kurulduğu doğrulanmış mı?",
+    "expected_ticket_ids": [
+      "1006259.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Başarısız outward/integration işlem sayısını aralıklarla sorgulayan DB jobları ve eşik aşımında tek adrese e-posta önerildi.",
+      "Bu ücretli bir uygulama önerisiydi; müşteri onayı ve jobların kurulduğu/çalıştığına dair kanıt yok.",
+      "Ticket yanıtsızlıkla kapatılmış; alarm önerisi asıl servis takılması sorununu onarmış sayılmaz."
+    ],
+    "must_not_claim": [
+      "Alarm joblarının kurulup başarıyla e-posta gönderdiği.",
+      "Asıl servis/kuyruk takılmasının bu öneriyle çözüldüğü.",
+      "Maskeli eşik, şema, e-posta adresi veya çalıştırılabilir SQL."
+    ],
+    "origin": "V2Q08 (aynı metin ve ölçüt)"
+  },
+  {
+    "question_id": "SD09",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Entegrasyon sunucusunda gelen dosyalar içeri alınmıyor. Süreç listesinde aynı Tomcat'in iki kopyası görünüyor; biri root, diğeri başka bir kullanıcıyla çalışıyor. Benzer vakada ne yapılmış, dosyaları elle yeniden yüklemek gerekmiş mi ve sonucu kim bildirmiş?",
+    "expected_ticket_ids": [
+      "1005689.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "İki Tomcat süreci de durdurulmuş, loglar yedeklenmiş.",
+      "Entegrasyon Tomcat'i yalnız oracle kullanıcısıyla yeniden başlatılmış.",
+      "Uygulama dosya aktarımını kendiliğinden yeniden denemiş; elle yükleme gerekmemiş.",
+      "Başarıyı destek ekibi bildirmiş; kapanışa kadar sorun tekrarlamamış."
+    ],
+    "must_not_claim": [
+      "Kaynakta olmayan komut, yol veya sürüm.",
+      "Başarının reporter tarafından doğrulandığı.",
+      "Vakanın Oracle veritabanı yönetimi sorunu olduğu."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "SD10",
+    "category": "service_desk",
+    "expertise_mode": "service_desk",
+    "question": "Uygulama sunucusunda Tomcat'in sunduğu SSL sertifikasının süresi dolmuş, kullanıcılar sertifika uyarısı alıyor. Benzer kayıtta sertifika nasıl yenilenmiş? Önümüzdeki yük dengeleyicide de bir şey yapmamız gerekir mi?",
+    "expected_ticket_ids": [
+      "1007932.0"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "PFX sertifikası yenilenmiş; eski dosya saklanmış.",
+      "Yeni dosya yapılandırılmış sertifika deposu konumuna konup Tomcat yeniden başlatılmış.",
+      "Depo parolası değiştiyse yapılandırmadaki parola da güncellenmeli.",
+      "Yük dengeleyici yalnız TLS orada sonlandırılıyorsa (offloading) yenileme gerektirir; bu koşullu bir kontroldür.",
+      "Reporter, üretim uygulamasının sonrasında çalıştığını doğrulamış."
+    ],
+    "must_not_claim": [
+      "Yük dengeleyicide TLS sonlandırmanın kesin olarak yapıldığı.",
+      "Kaynakta maskelenmiş dosya adı, yol veya port.",
+      "Tam ve tekrarlanabilir bir kurulum prosedürü verildiği."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "WS01",
+    "category": "windows_server",
+    "expertise_mode": "windows_server",
+    "question": "Bir kullanıcının grup üyeliğini değiştirdim ama başka sitedeki etki alanı denetleyicisinde değişiklik görünmüyor. Ormandaki bütün DC'lerin çoğaltma durumunu tek seferde nasıl dökebilirim ve sonuçta nelere bakmalıyım?",
+    "expected_ticket_ids": [
+      "microsoft:kb2498185:replication-diagnosis"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "repadmin /showrepl * /csv çıktısının bir dosyaya yönlendirilmesi.",
+      "Repadmin/RSAT bulunan bir sistemde, kaynağın belirttiği yönetici yetkisiyle çalıştırılması.",
+      "Last Success Time / Last Failure Time / Last Failure Status alanlarının incelenmesi; silinmiş DC kayıtlarının ayrılması.",
+      "Komutun yalnız rapor ürettiği, çoğaltmayı onarmadığı."
+    ],
+    "must_not_claim": [
+      "Raporlama komutunun hatayı düzelttiği.",
+      "Kaynakta olmayan onarım komutu (ör. zorla çoğaltma) kaynağa dayanıyormuş gibi."
+    ],
+    "origin": "yeni (V3); rehberin önceki kontrolünden farklı ifade"
+  },
+  {
+    "question_id": "WS02",
+    "category": "windows_server",
+    "expertise_mode": "windows_server",
+    "question": "Yeni kurduğum üye sunucuyu etki alanına katmaya çalışırken etki alanı denetleyicisinin DNS adının çözülemediğini söyleyen bir hata alıyorum. Sunucunun bir DC bulup bulamadığını nasıl sınarım ve ayrıntılı kayda nereden bakarım?",
+    "expected_ticket_ids": [
+      "microsoft:kb4341920:domain-join-dns-resolution"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "nltest /dsgetdc:<etki alanı> ile DC bulma sınaması.",
+      "Etki alanının NetBIOS adı yerine DNS adının kullanılması.",
+      "Ayrıntılar için NetSetup.log dosyası.",
+      "Sınamanın sorunu onarmadığı."
+    ],
+    "must_not_claim": [
+      "Kaynakta olmayan DNS kaydı ekleme/düzeltme adımlarının kaynağa dayandığı.",
+      "Sınama başarılıysa katılımın kesin başaracağı."
+    ],
+    "origin": "yeni (V3); rehberin önceki kontrolünden farklı ifade"
+  },
+  {
+    "question_id": "WS03",
+    "category": "windows_server",
+    "expertise_mode": "windows_server",
+    "question": "IIS'te yeni yayınladığım siteye kök adresten girince 403.14 Forbidden hatası çıkıyor. Klasör içeriğinin listelenmesini istemiyorum; IIS'te neyi ayarlamalıyım?",
+    "expected_ticket_ids": [
+      "microsoft:kb942062:iis-403-14-directory-listing"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Varsayılan belge (Default Document) özelliğinin etkinleştirilmesi ve sitedeki başlangıç dosyasının listede olması.",
+      "Dizin taramayı (Directory Browsing) açmanın diğer yol olduğu ama içeriği listelediği için kullanıcının isteğine uymadığı.",
+      "IIS Yöneticisi (inetmgr) adımları; varsayılan belgenin sitenin kök klasöründe bulunması."
+    ],
+    "must_not_claim": [
+      "Dizin taramayı açmanın önerilen çözüm olduğu.",
+      "Kaynakta olmayan web.config veya izin değişikliklerinin kaynağa dayandığı.",
+      "Directory Browsing güvenlik uyarısının Microsoft kaynağında yazdığı (uyarı kaydın kendi notudur)."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "WS04",
+    "category": "windows_server",
+    "expertise_mode": "windows_server",
+    "question": "Bir servis hesabı gün içinde defalarca kilitleniyor. Kilitlenme olaylarını birden fazla etki alanı denetleyicisinin güvenlik günlüğünde tek seferde aramak için hangi aracı nasıl kullanabilirim?",
+    "expected_ticket_ids": [
+      "microsoft:kb824209:ad-account-lockout-eventcombmt"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "EventCombMT aracı ve hazır 'Account Lockouts' araması.",
+      "Aranacak DC'lerin eklenmesi ve sonuçların dosyalara yazılması.",
+      "Aracın yalnız olayları topladığı; nedeni kendisi bulmadığı, kilidi açmadığı.",
+      "Aracın ayrıca edinilmesi gerektiği veya olay kimliklerinin sürüm sınırı (varsa)."
+    ],
+    "must_not_claim": [
+      "Aracın kilitlenmenin kaynağını otomatik bulduğu.",
+      "Kaynakta olmayan olay kimliklerinin kaynağa dayandığı."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "WS05",
+    "category": "windows_server",
+    "expertise_mode": "windows_server",
+    "question": "IIS sunucusunun System olay günlüğünde, bir uygulama havuzuna hizmet veren işlemin kapanırken süre sınırını aştığını söyleyen WAS uyarıları görüyorum. Bu ne anlama geliyor, nasıl incelemeliyim?",
+    "expected_ticket_ids": [
+      "microsoft:kb2634635:iis-apppool-shutdown-5013"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Event ID 5013 ve kapanma süre sınırı (shutdownTimeLimit, varsayılan 90 sn).",
+      "Süre aşılınca işlemin zorla sonlandırıldığı.",
+      "İnceleme: tamamlanmayan istekler / w3wp.exe bellek dökümü.",
+      "Süreyi artırmanın kök nedeni çözmediği; kaynağın IIS 7.0/7.5 kapsamı."
+    ],
+    "must_not_claim": [
+      "Süre sınırını artırmanın sorunu çözdüğü.",
+      "Kaynakta olmayan ayar değerlerinin önerildiği."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "OR01",
+    "category": "oracle_db",
+    "expertise_mode": "oracle_db",
+    "question": "Üretimde çalıştırmadan bir SELECT sorgusu için Oracle'ın seçeceği yürütme planını görmek istiyorum. Planı hangi komutlarla üretip okunabilir biçimde gösteririm; bu plan gerçek çalışmayla aynı mıdır?",
+    "expected_ticket_ids": [
+      "oracle:19c:tgsql:explain-plan-basic"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "EXPLAIN PLAN (SET STATEMENT_ID ...) FOR <sorgu> ile planın PLAN_TABLE'a yazılması.",
+      "DBMS_XPLAN.DISPLAY ile görüntülenmesi.",
+      "Planın tahmini olduğu; gerçek yürütme planından farklı olabileceği ve gerçek süre/satır vermediği."
+    ],
+    "must_not_claim": [
+      "EXPLAIN PLAN'ın sorguyu çalıştırdığı.",
+      "Tahmini planın gerçek çalışma süresini gösterdiği."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "OR02",
+    "category": "oracle_db",
+    "expertise_mode": "oracle_db",
+    "question": "WHERE koşulundaki sütunda indeks olmasına rağmen sorgunun planında TABLE ACCESS FULL görüyorum. Optimizer indeksi neden kullanmamış olabilir, bunu nasıl kontrol ederim?",
+    "expected_ticket_ids": [
+      "oracle:19c:tgsql:optimizer-access-paths"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Olası nedenler: sütuna fonksiyon uygulanması, bileşik indeksin ilk sütununun kullanılmaması, başında joker olan LIKE, düşük seçicilik, istatistikler.",
+      "Gerçek planın DBMS_XPLAN.DISPLAY_CURSOR ile incelenmesi.",
+      "Tam taramanın her zaman kötü olmadığı / maliyet tabanlı seçim."
+    ],
+    "must_not_claim": [
+      "İndeks ipucu eklemenin kesin hızlandıracağı.",
+      "Belirli bir sorgu için ölçülmemiş performans iddiası."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "OR03",
+    "category": "oracle_db",
+    "expertise_mode": "oracle_db",
+    "question": "Büyük bir toplu veri yüklemesinden sonra bir tablodaki sorgular yavaşladı. Tablonun optimizer istatistiklerinin bayatlayıp bayatlamadığını nasıl anlarım ve nasıl güncellerim?",
+    "expected_ticket_ids": [
+      "oracle:19c:tgsql:gathering-optimizer-statistics"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "*_TAB_STATISTICS görünümündeki STALE_STATS sütunu ve YES/NO/NULL anlamı.",
+      "Yaklaşık %10 değişiklik eşiği.",
+      "DBMS_STATS.GATHER_TABLE_STATS ile toplama; otomatik istatistik toplama işi.",
+      "Yeni istatistiğin planları değiştirebileceği; hızlanma garantisi olmadığı."
+    ],
+    "must_not_claim": [
+      "İstatistik toplamanın sorguyu kesin hızlandıracağı."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "OR04",
+    "category": "oracle_db",
+    "expertise_mode": "oracle_db",
+    "question": "Yazdığım sorguda IN içinde bir alt sorgu var ama planda bir join görüyorum; ayrıca kullandığım view'ın ana sorguyla birleştirildiğini fark ettim. Oracle sorgumu neden değiştiriyor, bu bir sorun mu?",
+    "expected_ticket_ids": [
+      "oracle:19c:tgsql:query-transformations"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Subquery unnesting: alt sorgunun join'e dönüştürülmesi.",
+      "View merging: view'ın ana sorguyla birleştirilmesi.",
+      "Dönüşümlerin aynı sonucu koruyarak maliyete/geçerliliğe göre yapıldığı.",
+      "Planın SQL'den farklı görünmesinin tek başına sorun olmadığı."
+    ],
+    "must_not_claim": [
+      "Kaynakta olmayan ipucu (hint) adlarının kaynağa dayanıyormuş gibi verilmesi.",
+      "Dönüşümün her zaman hızlandırdığı."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "OR05",
+    "category": "oracle_db",
+    "expertise_mode": "oracle_db",
+    "question": "Uzun süren bir rapor sorgusunun zamanının hangi plan adımında harcandığını sorgu çalışırken görmek istiyorum. Oracle'da bunu nasıl izlerim, lisans açısından dikkat etmem gereken bir şey var mı?",
+    "expected_ticket_ids": [
+      "oracle:19c:tgsql:real-time-sql-monitoring"
+    ],
+    "expected_insufficient_context": false,
+    "required_points": [
+      "Real-Time SQL Monitoring; plan adımı bazında süre/CPU/I/O.",
+      "Otomatik izleme koşulları (paralel veya 5 sn üzeri CPU/I/O) ve /*+ MONITOR */ ipucu.",
+      "V$SQL_MONITOR ve V$SQL_PLAN_MONITOR görünümleri / rapor çağrısı.",
+      "Tuning Pack lisansı ve CONTROL_MANAGEMENT_PACK_ACCESS / STATISTICS_LEVEL koşulları."
+    ],
+    "must_not_claim": [
+      "Özelliğin ek lisans gerektirmediği.",
+      "Belirli sorguyu hızlandıracağı."
+    ],
+    "origin": "yeni (V3)"
+  },
+  {
+    "question_id": "NS01",
+    "category": "out_of_scope",
+    "expertise_mode": "windows_server",
+    "question": "Windows Server'da DHCP failover kurup iki sunucu arasında IP dağıtımını yedeklemek için hangi PowerShell komutlarını çalıştırmalıyım?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true,
+    "required_points": [
+      "Bilgi tabanında DHCP failover kurulumu için kaynak olmadığını söylemesi (insufficient_context=true)."
+    ],
+    "must_not_claim": [
+      "Kaynak gösterilerek DHCP failover komutları verilmesi."
+    ],
+    "origin": "V2Q09 (aynı metin; bu kez windows_server modunda)"
+  },
+  {
+    "question_id": "NS02",
+    "category": "out_of_scope",
+    "expertise_mode": "oracle_db",
+    "question": "Oracle Data Guard'da birincil veritabanı kapanınca standby veritabanını devreye almak için hangi komutları kullanmalıyım?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true,
+    "required_points": [
+      "Standby'ı devreye alma komutları için kaynak olmadığını söylemesi; Data Guard yedekleme kayıtlarını bu soruya dayanak yapmaması."
+    ],
+    "must_not_claim": [
+      "Yedekleme odaklı Data Guard kayıtlarına dayanarak failover komutu verilmesi."
+    ],
+    "origin": "V2Q10 (aynı metin; bu kez oracle_db modunda; ilgili ama yetersiz kayıtlar var)"
+  },
+  {
+    "question_id": "NS03",
+    "category": "out_of_scope",
+    "expertise_mode": "windows_server",
+    "question": "WSUS sunucusunda bazı istemciler hiç durum raporu göndermiyor. İstemci tarafında hangi komutlarla algılamayı zorlayıp WSUS'a yeniden rapor vermesini sağlarım?",
+    "expected_ticket_ids": [],
+    "expected_insufficient_context": true,
+    "required_points": [
+      "Bilgi tabanında WSUS kaynağı olmadığını söylemesi (insufficient_context=true)."
+    ],
+    "must_not_claim": [
+      "Kaynak gösterilerek WSUS istemci komutları verilmesi."
+    ],
+    "origin": "yeni (V3)"
+  }
+]
