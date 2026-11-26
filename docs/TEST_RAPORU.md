@@ -19,6 +19,7 @@ Bu rapor, proje isterlerindeki tamamlanma kriterini karşılamak için hazırlan
 - Hiçbir yanıtta sorunun "iddia edilmemesi gerekenler" listesindeki bir ifade görülmedi.
 - "Kısmen uygun" bulunan tek yanıt SD03'tür. Kaynakla çelişmiyor, ancak kayıttaki bir öneriyi yapılan işlemle birleştiriyor (bkz. Bölüm 5).
 - **Tekrarlı ölçüm:** Set aynı sistemle iki kez daha çalıştırıldı (toplam 3 çalıştırma, 69 yanıt; bkz. Bölüm 4.1). Otomatik ölçümler üç çalıştırmada da birebir aynı çıktı: arama sonuçları ve kullanılan kaynaklar değişmedi. Elle incelemede çalıştırmalar 22/1/0, 23/0/0 ve 22/1/0 sonuç verdi. Kısmen uygun yanıt iki çalıştırmada da SD03'tü. Ortalama süre 8,2 / 9,4 / 9,2 saniye oldu; gecikmenin tamamı model aşamasından geliyor.
+- **Çok turlu sohbet (isterdeki "önceki mesajları hatırlama"):** 5 senaryo, 12 tur (bkz. Bölüm 4.2). Bağlama dayanan 7 takip turunun 7'sinde bot önceki mesajı doğru yorumladı: "evet", "bu çözüm", "bu komut", "bunu" ve konu değişimi. 12 yanıtın 12'si kaynağa bağlıydı. Bir turda arama beklenen rehberi ilk 3'e getiremedi (5. sıra); bot bu durumda yanıt uydurmadı.
 
 > **Düzeltme (26 Kasım 2026):** Raporun ilk sürümünde SD06 ve SD07 de "kısmen uygun" sayılmıştı. Gerekçe, "geçici çözüm" nitelendirmesinin kaynakta olmamasıydı. Bu yanlıştı. İnceleme yalnızca chunk metnine bakmıştı. Model ise kaydın bütün alanlarını alır ve iki kaydın `solution_scope` alanı `workaround` değerindedir. Prompt da workaround'u "geçici iyileştirme" olarak sunmayı ister. Bu iki yanıt uygun olarak düzeltildi. Toplam sonuç 20/3/0'dan 22/1/0'a değişti.
 
@@ -156,6 +157,32 @@ Uygulama günlüğündeki aşama süreleri (`app_logs`, `chat.ask_completed`, ay
 
 Süredeki dalgalanmanın tamamı bulut model aşamasındadır. Windows/Oracle yanıtları daha uzun ve kod bloklu olduğu için daha uzun sürüyor. 15 saniyeyi aşan iki istekte (NS01 ve NS03) model aşaması tek başına 13,9–15,0 saniye sürdü. Arama ve veritabanı süreleri ihmal edilebilir düzeyde.
 
+### 4.2 Çok turlu sohbet testi
+
+İsterlerdeki *"Bot, önceki mesajları hatırlayarak konuşma bağlamını sürdürebilmelidir"* maddesi için 5 senaryo hazırlandı: [evaluation/evaluation_conversations_v1.json](../evaluation/evaluation_conversations_v1.json). Toplam 12 tur var. Senaryolar ve beklentiler çalıştırmadan önce sabitlendi. Her senaryo tek bir sohbette, arayüzle aynı akışla çalıştırıldı ([evaluate_conversations.py](../evaluate_conversations.py)). İstemci geçmiş göndermez; API sohbetin son 3 soru–yanıt çiftini MSSQL'den okur. Çalıştırma 26 Kasım 2026 15:19'da, aynı kod, prompt ve bilgi tabanıyla yapıldı.
+
+| Senaryo | Mod | Ne sınanıyor | Sonuç |
+|---|---|---|---|
+| MT01 | service_desk | 3 tur: sorun anlatılır → "Evet, gizli pencerede açılıyor" → "Bu çözümün işe yaradığını müşteri doğrulamış mı?" | Kısa yanıt ve "bu çözüm" doğru bağlandı; doğrulamanın bildiren kullanıcıya ait olduğu doğru |
+| MT02 | service_desk | 2 tur: Tomcat vakası → "Peki sonucu kim bildirmiş?" | Konu belirtilmeyen soru önceki vakaya bağlandı; müşteri teyidi olmadığı korundu |
+| MT03 | windows_server | 3 tur: repadmin raporu → "Bu komut hatayı düzeltir mi?" → "Hangi yetkiyle çalıştırmalıyım?" | "Bu komut" ve "bunu" önceki komuta bağlandı; onarım komutu uydurulmadı; yetki raporlama adımına özgü verildi |
+| MT04 | oracle_db | 2 tur: istatistik sorusu → "Başka bir konu: …plan adımında zaman" | Konu değişimi doğru izlendi. **1. turda arama beklenen rehberi kaçırdı** (aşağıda). |
+| MT05 | windows_server | 2 tur: IIS 403.14 → WSUS sorusu (kaynak dışı) | Önceki konunun rehberi dayanak yapılmadı; kaynak yok dedi, komut vermedi |
+
+| Ölçüm | Sonuç |
+|---|---|
+| Tamamlanan tur | 12/12 (hata yok) |
+| Bağlama dayanan takip turlarında doğru yorum | 7/7 |
+| Beklenen kaynak kullanıldı | 10/11 (MT04 tur 1 hariç) |
+| Kaynak dışı turda doğru ret | 1/1 |
+| Uydurma kaynak kimliği / yasaklı iddia | 0 / 0 |
+| Kaynağa bağlılık (elle inceleme) | 12/12 uygun |
+| Ortalama süre | 7,1 sn (4,8–11,8) |
+
+**Bulgu 1: Kısa soruda arama kaçırması (MT04 tur 1).** "İstatistiklerin bayat olup olmadığını nasıl anlarım?" sorusunda beklenen rehber 5. sıradaydı. Benzerlik skorları: rehber 0,583, birinci aday 0,620. Model yalnız ilk 3 adayı gördüğü için rehber dışarıda kaldı. Aynı rehber, tekli testteki daha ayrıntılı OR03 sorusunda ("optimizer istatistikleri… nasıl güncellerim") 0,679 skorla birinci sıradaydı. Model bu durumda doğru davrandı: `STALE_STATS` gibi komutları uydurmadı, "bu aramada prosedür yok" dedi ve sürüm sordu. Ancak kullanıcı yardım alamadı. Adaylar arasındaki skor farkları küçük (0,58–0,62); kısa ve anahtar kelimesi az sorularda ilk 3 sınırı dar kalıyor.
+
+**Bulgu 2: Konu değişiminde önceki konunun kaynağı aramaya giriyor (MT05 tur 2, MT04 tur 2).** Arama metni, kısa takip sorularını anlamlandırmak için son soru–yanıt çiftini de içeriyor. Bu yüzden WSUS sorusunda IIS 403.14 rehberi 1. sırada, MT04'ün 2. turunda istatistik rehberi 2. sırada geldi. Her iki durumda da model önceki konunun kaynağını yeni soruya dayanak yapmadı. Yani koruma prompt düzeyinde çalışıyor, ama arama tarafında bir aday yerini boşa harcıyor.
+
 ## 5. Bulgular
 
 ### 5.1 Kısmen uygun bulunan yanıt
@@ -207,7 +234,7 @@ SD01–SD08, V2'deki V2Q01–V2Q08 sorularıyla aynı metne sahiptir.
 4. **Kaynak doğruluğu:** Değerlendirme kaynağı doğru kabul eder. Ticket kayıtlarındaki çözümlerin ya da rehber özetlerinin kendisi bu testte bağımsız olarak doğrulanmadı.
 5. **Elle inceleme tek kişiliktir:** İncelemeyi Claude yaptı; ikinci bir insan incelemesi yapılmadı.
 6. **Süre ölçümü:** `elapsed_ms` API içi süredir. Tarayıcı, ağ ve MSSQL'e kayıt süresini içermez. Bulut model süresi çalıştırmalar arasında dalgalanır; 12 Kasım'da tek bir zaman aşımı gözlenmişti, bu çalıştırmada gözlenmedi.
-7. **Kapsam dışı yetenekler:** Konuşma bağlamının sürdürülmesi (önceki mesajları hatırlama), yanıt puanlama, admin raporu ve kullanıcı yönetimi bu 23 soruluk testin konusu değildir. Bu özellikler aşağıdaki yazılım testleriyle sınanmıştır.
+7. **Kapsam dışı yetenekler:** Yanıt puanlama, admin raporu ve kullanıcı yönetimi bu testin konusu değildir; bu özellikler aşağıdaki yazılım testleriyle sınanmıştır. Konuşma bağlamının sürdürülmesi 5 senaryo ve 12 turla sınandı (Bölüm 4.2). Bu az sayıdadır ve en çok 3 turluk sohbetleri kapsar; daha uzun sohbetlerde yalnız son 3 soru–yanıt çifti bağlam olarak kullanılır.
 
 ## 8. Yazılım testleri (aynı gün)
 
@@ -228,7 +255,8 @@ Entegrasyon testlerinin eklediği kayıtlar transaction ile geri alındı.
 2. **Süre izleme:** Yanıt süresinin tamamı model aşamasında olduğu için, kullanıcıya 15 saniyeyi aşan bekleme durumlarında ilerleme göstergesi korunmalıdır. `app_logs` aşama süreleri bu izleme için yeterlidir.
 3. **Rehber dışı sorular:** Windows ve Oracle için topluluk kayıtlarına dayanan, rehberlerden bağımsız 5'er ek soru hazırlanmalı. Böylece Bölüm 7'deki iyimserlik ölçülebilir.
 4. **Eksik içerik:** EventCombMT rehber kaydına "araç ayrıca indirilir" bilgisi daha belirgin biçimde, örneğin çözüm adımlarının başına, eklenebilir.
-5. **Çok turlu test:** "Önceki mesajları hatırlama" isteri için 2–3 adımlı birkaç sohbet senaryosu değerlendirme setine eklenmeli.
+5. **Arama genişliği (Bölüm 4.2, Bulgu 1):** Modele verilen aday sayısı 3'ten 5'e çıkarılabilir veya anahtar kelime eşleşmesini de kullanan karma bir arama denenebilir. Böylece kısa sorularda yakın skorlu doğru kaynak dışarıda kalmaz. Değişiklikten sonra V3 seti ve çok turlu senaryolar yeniden çalıştırılmalıdır.
+6. **Konu değişiminde arama metni (Bölüm 4.2, Bulgu 2):** Geçmiş, arama metnine yalnız kısa takip sorularında eklenebilir; örneğin birkaç kelimelik veya "bu/bunu/o" gibi gönderme içeren sorularda. Uzun ve bağımsız bir soruda yalnız güncel soru aranır.
 
 ## 10. Tekrar çalıştırma
 
@@ -238,6 +266,12 @@ API açık ve hesap erişimleri hazırken (bulut çağrısı yapar, 23 model ist
 Set-Location -LiteralPath "D:\ai-muhendis-chatbot"
 $env:APP_ACCESS_TOKEN = "<girişten alınan token>"
 .\.venv\Scripts\python.exe evaluate_api.py --questions evaluation\evaluation_questions_v3.json --output-dir outputs_local\evaluation_set_v3\runs
+```
+
+Çok turlu senaryolar (12 model isteği):
+
+```powershell
+.\.venv\Scripts\python.exe evaluate_conversations.py --output-dir outputs_local\evaluation_conversations_v1
 ```
 
 Bu çalıştırmada kullanılan `evaluate_api.py` sürümünün SHA-256 değeri sonuç dosyasında kayıtlıdır (`66bcc78a…07bc`). Depodaki güncel sürüm, sonradan yapılan klasör düzenlemesi (`4d88e70`) nedeniyle yalnızca varsayılan dosya yollarında farklıdır.
@@ -252,6 +286,7 @@ Aşağıdaki dosyalar yerelde Git dışında tutulur (`outputs_local/`):
 | `…_860039.meta.json` | Çalıştırma bilgileri: başlangıç/bitiş, soru ve araç hash'leri, kategori özetleri |
 | `…_860039_manual_review.json` | Soru bazında elle inceleme kararı, gerekçe ve bulunan sorunlar |
 | `…_20261126_144452_617953*.json`, `…_20261126_144835_222767*.json` | 2. ve 3. çalıştırmanın ham sonucu, meta bilgisi ve elle incelemesi |
+| `outputs_local/evaluation_conversations_v1/conversation_results_evaluation_conversations_v1_20261126_151924*.json` | Çok turlu senaryoların ham sonucu, meta bilgisi ve elle incelemesi |
 
 Test sohbetleri ayrıca MSSQL `ServisMasasiApp` veritabanında test kullanıcısının sohbetleri olarak kayıtlıdır.
 

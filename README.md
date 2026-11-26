@@ -187,6 +187,12 @@ MSSQL bağlantısı PostgreSQL'den bağımsız `MSSQL_CONNECTION_STRING` ayarın
 .\.venv\Scripts\python.exe evaluate_api.py --questions evaluation\evaluation_questions_v3.json --output-dir outputs_local\evaluation_set_v3\runs
 ```
 
+**Çok turlu sohbet testi:** 5 senaryo, 12 tur. Bağlama dayanan 7 takip sorusunun 7'si doğru yorumlandı ve 12 yanıtın 12'si kaynağa bağlıydı. Kısa bir soruda arama beklenen rehberi ilk 3 adaya getiremedi; bot yanıt uydurmadı. Ayrıntılar test raporunun 4.2 bölümünde.
+
+```powershell
+.\.venv\Scripts\python.exe evaluate_conversations.py --output-dir outputs_local\evaluation_conversations_v1
+```
+
 V3 seti her soruyu kendi uzmanlık moduyla, varsayılan olarak kalıcı sohbet akışından sorar (`--flow direct` kayıt yapmayan `/ask` ucunu kullanır); bir soru hata verirse kaydedip sonraki soruya geçer.
 
 Bulut çağrısı yapmadan otomatik testleri çalıştır:
@@ -195,7 +201,7 @@ Bulut çağrısı yapmadan otomatik testleri çalıştır:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Depoda 195 birim testi vardır. Gerçek veritabanı gerektiren testler, aşağıdaki ortam değişkenleri verilmedikçe atlanır:
+Depoda 201 birim testi vardır. Gerçek veritabanı gerektiren testler, aşağıdaki ortam değişkenleri verilmedikçe atlanır:
 - `MSSQL_TEST_CONNECTION_STRING`
 - `CHAT_HISTORY_SQL_TEST=1`
 - `ADMIN_REPORT_SQL_TEST=1`

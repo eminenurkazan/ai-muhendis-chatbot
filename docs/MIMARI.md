@@ -74,7 +74,7 @@ Yardımcı ve tek seferlik araçlar katmanların dışındadır:
 | Açık/kapalı (O) | Yeni bir uzmanlık modu, `rag_prompts.py` içine yönerge ve `ExpertiseMode` değeri eklenerek tanımlanır. RAG zinciri ve arama kodu değişmez, alan filtresi moddan türetilir. |
 | Bağımlılıkların tersine çevrilmesi (D) | `kb_service.approve_record(connection, record_id, embed)` embedding fonksiyonunu parametre olarak alır. Testler sahte embedding verir, API gerçek sağlayıcıyı verir. Servisler bağlantıyı ve repository'yi parametre olarak alır. |
 | Arayüz ayrımı (I) | Arayüz, API ile yalnız `ui_client.py` üzerinden konuşur. Streamlit kodu HTTP ayrıntısını bilmez. |
-| Test edilebilirlik | 195 birim testi: sahte bağlantı, sahte model ve sahte API ile. Gerçek SQL/PostgreSQL testleri ortam değişkeniyle açılır ve rollback ile iz bırakmaz. |
+| Test edilebilirlik | 201 birim testi: sahte bağlantı, sahte model ve sahte API ile. Gerçek SQL/PostgreSQL testleri ortam değişkeniyle açılır ve rollback ile iz bırakmaz. |
 | Okunabilirlik | Modüllerin başında görevini anlatan açıklama vardır; kullanıcıya dönen hata mesajları Türkçe ve gizli bilgi içermez. |
 
 ## 4. Bilinen sapmalar

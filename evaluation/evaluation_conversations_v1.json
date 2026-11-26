@@ -1,0 +1,121 @@
+[
+  {
+    "conversation_id": "MT01",
+    "expertise_mode": "service_desk",
+    "focus": "Kısa yanıtı önceki soruyla ilişkilendirme ve takip sorusunda aynı kaynağı sürdürme",
+    "turns": [
+      {
+        "question": "Chrome'da bir web uygulaması birkaç haftadır normal pencerede açılmıyor.",
+        "expected_ticket_ids": ["1005127.0"],
+        "expected_insufficient_context": null,
+        "required_points": ["Benzer kayıtta önbellek temizliği ve yeniden giriş denendiğini söylemesi veya gizli pencerede açılıp açılmadığını sorması."],
+        "must_not_claim": ["Kaynakta olmayan neden (ör. eklenti, proxy, DNS) kaynağa dayanıyormuş gibi."]
+      },
+      {
+        "question": "Evet, gizli pencerede açılıyor.",
+        "expected_ticket_ids": ["1005127.0"],
+        "expected_insufficient_context": false,
+        "required_points": ["'Evet' yanıtını önceki Chrome sorunuyla ilişkilendirmesi.", "Tarayıcı önbelleğini temizleyip yeniden giriş yapma önerisi."],
+        "must_not_claim": ["Kök nedenin kesin olarak bilindiği."]
+      },
+      {
+        "question": "Bu çözümün işe yaradığını müşteri kendisi doğrulamış mı?",
+        "expected_ticket_ids": ["1005127.0"],
+        "expected_insufficient_context": false,
+        "required_points": ["'Bu çözüm'ü önbellek temizliği olarak anlaması.", "Bildiren kullanıcının (reporter) önbellek temizliğinden sonra çalıştığını doğruladığı ve kaydın kapatılmasını istediği."],
+        "must_not_claim": ["Doğrulamanın destek ekibine ait olduğu.", "Altta yatan nedenin bulunduğu."]
+      }
+    ]
+  },
+  {
+    "conversation_id": "MT02",
+    "expertise_mode": "service_desk",
+    "focus": "Konu belirtilmeyen takip sorusunu önceki vakaya bağlama; onay rolünü koruma",
+    "turns": [
+      {
+        "question": "Entegrasyon sunucusunda gelen dosyalar içeri alınmıyor; Tomcat'in iki kez, farklı kullanıcılarla çalıştığını gördük. Benzer vakada ne yapılmış?",
+        "expected_ticket_ids": ["1005689.0"],
+        "expected_insufficient_context": false,
+        "required_points": ["İki Tomcat sürecinin durdurulması, logların yedeklenmesi, entegrasyon Tomcat'inin oracle kullanıcısıyla başlatılması."],
+        "must_not_claim": ["Kaynakta olmayan komut veya yol."]
+      },
+      {
+        "question": "Peki sonucu kim bildirmiş, sorun tekrar etmiş mi?",
+        "expected_ticket_ids": ["1005689.0"],
+        "expected_insufficient_context": false,
+        "required_points": ["Sonucu destek ekibinin bildirdiği.", "Kapanışa kadar sorunun tekrarlamadığı."],
+        "must_not_claim": ["Müşterinin/reporter'ın başarıyı doğruladığı."]
+      }
+    ]
+  },
+  {
+    "conversation_id": "MT03",
+    "expertise_mode": "windows_server",
+    "focus": "Komutla ilgili takip sorularında kaynak sınırını koruma (raporlama ≠ onarım) ve yetki bilgisini önceki komuta bağlama",
+    "turns": [
+      {
+        "question": "Ormandaki domain controller'ların çoğaltma durumunu tek seferde CSV olarak nasıl alırım?",
+        "expected_ticket_ids": ["microsoft:kb2498185:replication-diagnosis"],
+        "expected_insufficient_context": false,
+        "required_points": ["repadmin /showrepl * /csv komutu ve çıktının dosyaya yönlendirilmesi."],
+        "must_not_claim": ["Komutun çoğaltmayı onardığı."]
+      },
+      {
+        "question": "Bu komut çoğaltma hatasını da düzeltir mi?",
+        "expected_ticket_ids": ["microsoft:kb2498185:replication-diagnosis"],
+        "expected_insufficient_context": false,
+        "required_points": ["'Bu komut'u repadmin /showrepl olarak anlaması.", "Hayır: yalnız rapor ürettiği, onarmadığı; hataya özgü onarım için Last Failure Status'a göre ilgili belgeye gidilmesi."],
+        "must_not_claim": ["Kaynakta olmayan onarım komutu (ör. repadmin /syncall, /replicate) kaynağa dayanıyormuş gibi."]
+      },
+      {
+        "question": "O zaman bunu hangi yetkiyle çalıştırmam gerekiyor?",
+        "expected_ticket_ids": ["microsoft:kb2498185:replication-diagnosis"],
+        "expected_insufficient_context": false,
+        "required_points": ["Yönetici komut istemi ve Enterprise Admins kimlik bilgileri (kaynağın raporlama adımı için belirttiği)."],
+        "must_not_claim": ["Bu yetkinin bütün repadmin kullanımları için asgari koşul olduğu."]
+      }
+    ]
+  },
+  {
+    "conversation_id": "MT04",
+    "expertise_mode": "oracle_db",
+    "focus": "Aynı sohbette konu değişince önceki konunun varsayımlarını taşımama",
+    "turns": [
+      {
+        "question": "Büyük bir toplu yüklemeden sonra bir tablodaki sorgular yavaşladı. İstatistiklerin bayat olup olmadığını nasıl anlarım?",
+        "expected_ticket_ids": ["oracle:19c:tgsql:gathering-optimizer-statistics"],
+        "expected_insufficient_context": false,
+        "required_points": ["STALE_STATS sorgusu ve YES/NO/NULL anlamı."],
+        "must_not_claim": ["İstatistik toplamanın sorguyu kesin hızlandıracağı."]
+      },
+      {
+        "question": "Başka bir konu: çalışan uzun bir sorgunun zamanının hangi plan adımında harcandığını nasıl görürüm?",
+        "expected_ticket_ids": ["oracle:19c:tgsql:real-time-sql-monitoring"],
+        "expected_insufficient_context": false,
+        "required_points": ["Real-Time SQL Monitoring ve plan adımı bazında süre.", "Tuning Pack lisans uyarısı."],
+        "must_not_claim": ["Sorunun istatistiklerden kaynaklandığı veya önceki istatistik önerisinin bu soruya cevap olduğu."]
+      }
+    ]
+  },
+  {
+    "conversation_id": "MT05",
+    "expertise_mode": "windows_server",
+    "focus": "Konu kaynak dışı bir alana geçince önceki konunun kaynağını kullanmama ve yanıt uydurmama",
+    "turns": [
+      {
+        "question": "IIS'te yeni sitemde kök adreste 403.14 hatası alıyorum, klasör listelemesi istemiyorum. Ne yapmalıyım?",
+        "expected_ticket_ids": ["microsoft:kb942062:iis-403-14-directory-listing"],
+        "expected_insufficient_context": false,
+        "required_points": ["Default Document yöntemi; Directory Browsing önerilmemesi."],
+        "must_not_claim": ["Dizin taramayı açmanın önerilen çözüm olduğu."]
+      },
+      {
+        "question": "Tamam, o çözüldü. Ayrıca WSUS sunucusunda bazı istemciler hiç rapor göndermiyor; istemcide hangi komutla algılamayı zorlayabilirim?",
+        "expected_ticket_ids": [],
+        "expected_insufficient_context": true,
+        "required_points": ["WSUS için kaynak bulunmadığını söylemesi; komut vermemesi."],
+        "must_not_claim": ["IIS 403.14 rehberini WSUS sorusuna dayanak yapması.", "Kaynak gösterilerek WSUS istemci komutu verilmesi."]
+      }
+    ]
+  }
+]
